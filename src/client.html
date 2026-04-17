@@ -1,0 +1,15 @@
+<input id="query" placeholder="Вопрос">
+<button onclick="search()">Отправить</button>
+<div id="answer"></div>
+
+<script>
+    async function search() {
+        const resp = await fetch("/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: query.value, collection_name: "sber_docs" })
+        });
+        const data = await resp.json();
+        answer.innerText = data.answer;
+    }
+</script>

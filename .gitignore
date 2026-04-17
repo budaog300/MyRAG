@@ -1,0 +1,79 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+.env
+.env.*
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+.coverage.*
+*.cover
+*.log
+*.pid
+*.seed
+*.pid
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.classpath
+.settings/
+*.sublime-*
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+*.ipynb_checkpoints
+
+# Project specific
+logs/
+*.db
+*.sqlite
+*.sqlite3
+/data/
+/tmp/
+/backups/
+.env.local
+.env.*.local
+*storage/
+docs/
+
+# Docker
+*.tar
+*.tar.gz
+.dockerize/
+
+# Testing
+/htmlcov/
+.tox/
+.nox/
+.coverage
+coverage.xml
+*.pytest_cache/
+
+# Distribution
+/dist/
+/build/
+*.egg-info/
+*.egg
+MANIFEST

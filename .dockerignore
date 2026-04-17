@@ -1,0 +1,81 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Environment
+.env
+.env.*
+!.env.example
+.env.local
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+*.dockerfile
+
+# Project specific
+*.md
+!README.md
+docs/
+tests/
+.gitlab-ci.yml
+.github/
+.pre-commit-config.yaml
+.pylintrc
+.flake8
+pyproject.toml
+poetry.lock
+requirements-dev.txt
+*storage/
+docs/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# OS
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# Logs & Temp
+logs/
+*.log
+tmp/
+temp/
+*.pid
+*.seed
+*.pid.lock
+
+# Data
+*.db
+*.sqlite
+*.sqlite3
+*.tar.gz
+*.zip
+/data/
+/backups/
