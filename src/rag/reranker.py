@@ -1,16 +1,15 @@
-from typing import Optional, Sequence
-from langchain_core.callbacks import Callbacks
-from langchain_core.documents import Document
-from langchain_core.documents.compressor import BaseDocumentCompressor
+from typing import Optional, Sequence, List
 from sentence_transformers import CrossEncoder
 
+from src.schemas.schemas import RAGDocument
 
-class BgeRerank(BaseDocumentCompressor):
+
+class Rerank:
     model_name: str = "BAAI/bge-reranker-v2-m3"
     top_n: int = 5
     model: CrossEncoder = CrossEncoder(model_name)
 
-    def bge_rerank(self, query, docs):
+    def rerank(self, query: str, docs: List[str]):
         model_inputs = [[query, doc] for doc in docs]
         scores = self.model.predict(model_inputs)
         results = sorted(enumerate(scores), key=lambda x: x[1], reverse=True)
@@ -18,21 +17,20 @@ class BgeRerank(BaseDocumentCompressor):
 
     def compress_documents(
         self,
-        documents: Sequence[Document],
         query: str,
-        callbacks: Optional[Callbacks] = None,
-    ) -> Sequence[Document]:
+        documents: List[RAGDocument],
+    ) -> List[RAGDocument]:
         if len(documents) == 0:
             return []
 
-        doc_list = list(documents)
-        _docs = [d.page_content for d in doc_list]
-        results = self.bge_rerank(query, _docs)
+        list_docs = list(documents)
+        _docs = [doc.content for doc in list_docs]
+        results = self.rerank(query, _docs)
         final_results = []
-
+        print(results)
         for r in results:
-            doc = doc_list[r[0]]
-            doc.metadata["relevance_score"] = r[1]
+            doc = list_docs[r[0]]
+            doc.rerank_score = r[1]
             final_results.append(doc)
 
         return final_results

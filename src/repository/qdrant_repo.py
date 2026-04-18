@@ -4,7 +4,7 @@ from qdrant_client.models import Distance, VectorParams, PointStruct, Document
 
 from src.core.config import settingsQdrant
 from src.repository.base import VectorBaseRepository
-from src.schemas.schemas import CollectionSchema
+from src.schemas.schemas import CollectionSchema, RAGDocument
 
 auth_data = settingsQdrant.get_auth_data
 
@@ -70,13 +70,25 @@ class QdrantRepository(VectorBaseRepository):
         model: str = "sentence-transformers/all-MiniLM-L6-v2",
         limit: int = 10,
         with_payload: bool = True,
-    ) -> List:
-        results = await self.client.query_points(
+    ) -> List[RAGDocument]:
+        retrieved_docs = await self.client.query_points(
             collection_name=collection_name,
             query=Document(text=query, model=model),
             with_payload=with_payload,
             limit=limit,
         )
+
+        results = [
+            RAGDocument(
+                id=str(point.id),
+                content=point.payload.get("content", ""),
+                retrieval_score=point.score,
+                metadata=point.payload.get("metadata", {}),
+                source=point.payload.get("source", ""),
+            )
+            for point in retrieved_docs.points
+        ]
+        print(results)
         return results
 
     async def close(self):

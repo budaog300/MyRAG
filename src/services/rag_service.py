@@ -1,11 +1,21 @@
+from typing import List
+
 from src.generation.llm_generator_v1 import LLMGenerator
 from src.repository import VectorBaseRepository
+from src.rag import Rerank
 
 
 class RAGService:
-    def __init__(self, repo: VectorBaseRepository, model: str = "openai/gpt-4o-mini"):
-        self.llm = LLMGenerator(model=model)
+    def __init__(
+        self,
+        repo: VectorBaseRepository,
+        # processors: List | None,
+        model: str = "openai/gpt-4o-mini",
+    ):
         self.repo = repo
+        # self.processors = processors or []
+        self.reranker = Rerank()
+        self.llm = LLMGenerator(model=model)
 
     async def full_step(
         self,
@@ -14,11 +24,14 @@ class RAGService:
         *args,
         **kwargs,
     ) -> str:
-        context = await self.repo.search_points(query, collection_name)
+        retrieved_docs = await self.repo.search_points(query, collection_name)
         # print(context)
+
+        reranked_docs = self.reranker.compress_documents(query, retrieved_docs)
+        context = [doc.content for doc in reranked_docs]
         answer = await self.llm.generate(
             query,
-            list(map(lambda x: x.payload["content"], context.points)),
+            context,
             *args,
             **kwargs,
         )

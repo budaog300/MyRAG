@@ -36,6 +36,7 @@ Dockerfile
 .dockerignore
 docker-compose*.yml
 *.dockerfile
+docker-compose.yml
 
 # Project specific
 *.md
