@@ -4,7 +4,7 @@ from typing import Annotated, List
 from src.core.deps import RepoDep
 from src.schemas.schemas import AddCollectionSchema, CollectionSchema
 
-router = APIRouter(prefix="/api/v1/collections", tags=["Repository"])
+router = APIRouter(prefix="/api/v1/collections", tags=["Vector Repository"])
 
 
 @router.post("/", summary="Создать коллекцию")

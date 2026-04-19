@@ -3,7 +3,7 @@ from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct, Document
 
 from src.core.config import settingsQdrant
-from src.repository.base import VectorBaseRepository
+from src.repository.vector_store.base import VectorBaseRepository
 from src.schemas.schemas import CollectionSchema, RAGDocument
 
 auth_data = settingsQdrant.get_auth_data

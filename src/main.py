@@ -5,14 +5,16 @@ from contextlib import asynccontextmanager
 
 from src.services.rag_service import RAGService
 from src.schemas.schemas import QuerySchema
-from src.repository import QdrantRepository
+from src.repository import QdrantRepository, ElasticRepository
 from src.core.deps import RAGDep
-from src.repository.routes import router as router_repo
+from src.repository.keyword_store.routes import router as router_vector_repo
+from src.repository.vector_store.routes import router as router_keyword_repo
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.repo = QdrantRepository()
+    app.state.keyword_repo = ElasticRepository()
     app.state.rag_service = RAGService(repo=app.state.repo, model="openai/gpt-4o-mini")
     yield
     await app.state.repo.close()
@@ -65,7 +67,8 @@ async def rag_query(query_data: QuerySchema, rag_service: RAGDep):
     return answer
 
 
-app.include_router(router_repo)
+app.include_router(router_vector_repo)
+app.include_router(router_keyword_repo)
 
 
 if __name__ == "__main__":

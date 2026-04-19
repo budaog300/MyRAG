@@ -1,5 +1,6 @@
 from typing import Any, Dict, List
 from abc import ABC, abstractmethod
+from src.schemas.schemas import RAGDocument
 
 
 class VectorBaseRepository(ABC):
@@ -37,7 +38,7 @@ class VectorBaseRepository(ABC):
         model: str = "sentence-transformers/all-MiniLM-L6-v2",
         limit: int = 10,
         **kwargs
-    ) -> List: ...
+    ) -> List[RAGDocument]: ...
 
     @abstractmethod
     async def close(self): ...
