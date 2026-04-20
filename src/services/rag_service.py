@@ -1,19 +1,17 @@
 from typing import List
 
 from src.generation.llm_generator_v1 import LLMGenerator
-from src.repository import VectorBaseRepository
+from src.retrieval import BaseRetriever
 from src.rag import Rerank
 
 
 class RAGService:
     def __init__(
         self,
-        repo: VectorBaseRepository,
-        # processors: List | None,
+        retriever: BaseRetriever,
         model: str = "openai/gpt-4o-mini",
     ):
-        self.repo = repo
-        # self.processors = processors or []
+        self.retriever = retriever
         self.reranker = Rerank()
         self.llm = LLMGenerator(model=model)
 
@@ -21,10 +19,16 @@ class RAGService:
         self,
         query: str,
         collection_name: str,
-        *args,
+        retrieve_limit: int = 30,
+        merge_limit: int = 10,
         **kwargs,
     ) -> str:
-        retrieved_docs = await self.repo.search_points(query, collection_name)
+        retrieved_docs = await self.retriever.retrieve(
+            query,
+            collection_name,
+            retrieve_limit=retrieve_limit,
+            merge_limit=merge_limit,
+        )
         # print(context)
 
         reranked_docs = self.reranker.compress_documents(query, retrieved_docs)
@@ -32,7 +36,6 @@ class RAGService:
         answer = await self.llm.generate(
             query,
             context,
-            *args,
             **kwargs,
         )
         return answer
@@ -41,11 +44,18 @@ class RAGService:
         self,
         query: str,
         collection_name: str,
+        retrieve_limit: int = 30,
+        merge_limit: int = 10,
         temperature: float = 0.3,
         max_tokens: int = 1024,
     ) -> dict:
         return {
             "answer": await self.full_step(
-                query, collection_name, temperature, max_tokens
+                query=query,
+                collection_name=collection_name,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                retrieve_limit=retrieve_limit,
+                merge_limit=merge_limit,
             )
         }

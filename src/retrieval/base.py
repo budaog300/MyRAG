@@ -4,5 +4,8 @@ from src.schemas.schemas import RAGDocument
 
 
 class BaseRetriever(ABC):
+
     @abstractmethod
-    async def retrieve(self, query: str, collection_name: str) -> List[RAGDocument]: ...
+    async def retrieve(
+        self, query: str, collection_name: str, **kwargs
+    ) -> List[RAGDocument]: ...

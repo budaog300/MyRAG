@@ -30,7 +30,7 @@ class Rerank:
         print(results)
         for r in results:
             doc = list_docs[r[0]]
-            doc.rerank_score = r[1]
+            doc.metadata["rerank_score"] = r[1]
             final_results.append(doc)
 
         return final_results

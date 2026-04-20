@@ -22,6 +22,11 @@ async def get_collection_details(collection_name: str, repo: RepoDep):
     return await repo.get_collection_details(collection_name)
 
 
+@router.delete("/{collection_name}/points", summary="Очистить коллекцию")
+async def clear_collection(collection_name: str, repo: RepoDep):
+    await repo.clear_collection(collection_name)
+
+
 @router.delete("/{collection_name}", summary="Удалить коллекцию")
 async def delete_collection(collection_name: str, repo: RepoDep):
     await repo.delete_collection(collection_name)

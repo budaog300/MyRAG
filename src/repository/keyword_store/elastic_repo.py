@@ -1,6 +1,6 @@
 import asyncio
 from typing import List, Dict, Any
-from elasticsearch import AsyncElasticsearch
+from elasticsearch import AsyncElasticsearch, helpers
 
 from src.repository import KeywordBaseRepository
 from src.schemas.schemas import RAGDocument, IndexSchema
@@ -31,10 +31,13 @@ class ElasticRepository(KeywordBaseRepository):
     async def delete_index(self, index: str):
         await self.client.indices.delete(index=index)
 
-    async def index(self, index: str, items: List[Dict[str, Any]]):
-        operations = [
+    async def clear_index(self, index: str):
+        return await self.client.delete_by_query(index=index, query={"match_all": {}})
+
+    async def index_documents(self, index: str, items: List[Dict[str, Any]]):
+        actions = [
             {
-                "index": index,
+                "_index": index,
                 "_id": i + 1,
                 "_source": {
                     "content": item["content"],
@@ -44,7 +47,7 @@ class ElasticRepository(KeywordBaseRepository):
             }
             for i, item in enumerate(items)
         ]
-        await self.client.bulk(index=index, operations=operations)
+        await helpers.async_bulk(self.client, actions)
 
     async def search(
         self, query: str, index: str, limit: int = 10
@@ -55,13 +58,19 @@ class ElasticRepository(KeywordBaseRepository):
             size=limit,
         )
 
-        print(retrieved_docs)
+        print(f"Elastic output={retrieved_docs}")
+
+        result = [
+            RAGDocument(
+                id=hit["_id"],
+                content=hit["_source"]["content"],
+                score=hit["_score"],
+                metadata=hit["_source"]["metadata"],
+                source=hit["_source"]["source"],
+            )
+            for hit in retrieved_docs["hits"]["hits"]
+        ]
+        return result
 
     async def close(self):
         await self.client.close()
-
-
-if __name__ == "__main__":
-    el = ElasticRepository()
-    asyncio.run(el.search("sdsdd", "dsdsd"))
-    asyncio.run(el.close())

@@ -19,6 +19,9 @@ class VectorBaseRepository(ABC):
     async def get_collection_details(self): ...
 
     @abstractmethod
+    async def clear_collection(self, collection_name: str): ...
+
+    @abstractmethod
     async def delete_collection(self, collection_name: str): ...
 
     @abstractmethod

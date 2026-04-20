@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Depends, HTTPException
+import time
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
@@ -6,6 +7,7 @@ from contextlib import asynccontextmanager
 from src.services.rag_service import RAGService
 from src.schemas.schemas import QuerySchema
 from src.repository import QdrantRepository, ElasticRepository
+from src.retrieval import VectorRetriever, BM25Retriever, HybridRetriever
 from src.core.deps import RAGDep
 from src.repository.keyword_store.routes import router as router_vector_repo
 from src.repository.vector_store.routes import router as router_keyword_repo
@@ -15,9 +17,15 @@ from src.repository.vector_store.routes import router as router_keyword_repo
 async def lifespan(app: FastAPI):
     app.state.repo = QdrantRepository()
     app.state.keyword_repo = ElasticRepository()
-    app.state.rag_service = RAGService(repo=app.state.repo, model="openai/gpt-4o-mini")
+
+    vector_retriever = VectorRetriever(app.state.repo)
+    keyword_retriever = BM25Retriever(app.state.keyword_repo)
+    hybrid_retriever = HybridRetriever(vector_retriever, keyword_retriever)
+
+    app.state.rag_service = RAGService(hybrid_retriever, model="openai/gpt-4o-mini")
     yield
     await app.state.repo.close()
+    await app.state.keyword_repo.close()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -29,6 +37,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_credentials=True,
 )
+
+
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    start = time.perf_counter()
+    response = await call_next(request)
+    process_time = time.perf_counter() - start
+    response.headers["X-Process-Time"] = str(process_time)
+    return response
 
 
 @app.get("/")

@@ -12,8 +12,7 @@ class QuerySchema(BaseModel):
 class RAGDocument(BaseModel):
     id: str | None = None
     content: str
-    retrieval_score: float | None = None
-    rerank_score: float | None = None
+    score: float | None = None
     metadata: dict = Field(default_factory=dict)
     source: str | None = None
 

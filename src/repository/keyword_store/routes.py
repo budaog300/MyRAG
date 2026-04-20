@@ -17,6 +17,11 @@ async def get_indices(repo: KeywordRepoDep) -> List[IndexSchema]:
     return await repo.get_indices()
 
 
-@router.delete("/{index}", summary="Удалить удалить")
+@router.delete("/{index}/documents", summary="Очистить индекс")
+async def clear_index(index: str, repo: KeywordRepoDep):
+    await repo.clear_index(index)
+
+
+@router.delete("/{index}", summary="Удалить индекс")
 async def delete_index(index: str, repo: KeywordRepoDep):
     await repo.delete_index(index)

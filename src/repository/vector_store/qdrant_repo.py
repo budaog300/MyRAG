@@ -1,5 +1,6 @@
 from typing import Any, Dict, List
 from qdrant_client import AsyncQdrantClient
+from qdrant_client.http import models
 from qdrant_client.models import Distance, VectorParams, PointStruct, Document
 
 from src.core.config import settingsQdrant
@@ -33,6 +34,11 @@ class QdrantRepository(VectorBaseRepository):
     async def get_collection_details(self, collection_name: str):
         result = await self.client.get_collection(collection_name)
         return result
+
+    async def clear_collection(self, collection_name: str):
+        await self.client.delete(
+            collection_name=collection_name, points_selector=models.Filter()
+        )
 
     async def delete_collection(
         self,
@@ -78,17 +84,19 @@ class QdrantRepository(VectorBaseRepository):
             limit=limit,
         )
 
+        print(f"Qdrant output={retrieved_docs}")
+
         results = [
             RAGDocument(
                 id=str(point.id),
                 content=point.payload.get("content", ""),
-                retrieval_score=point.score,
+                score=point.score,
                 metadata=point.payload.get("metadata", {}),
                 source=point.payload.get("source", ""),
             )
             for point in retrieved_docs.points
         ]
-        print(results)
+
         return results
 
     async def close(self):
