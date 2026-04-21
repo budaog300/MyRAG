@@ -31,6 +31,9 @@ class ElasticRepository(KeywordBaseRepository):
         print(indices)
         return [IndexSchema(name=index["index"]) for index in indices]
 
+    async def get_index_details(self, index: str):
+        return await self.client.count(index=index)
+
     async def delete_index(self, index: str):
         await self.client.indices.delete(index=index)
 
@@ -50,10 +53,13 @@ class ElasticRepository(KeywordBaseRepository):
             }
             for i, item in enumerate(items)
         ]
-        await helpers.async_bulk(self.client, actions)
+        success, failed = await helpers.async_bulk(self.client, actions)
+        print("SUCCESS:", success)
+        print("FAILED:", failed)
+        await self.client.indices.refresh(index=index)
 
     async def search(
-        self, query: str, index: str, limit: int = 10
+        self, query: str, index: str, limit: int = 10, **kwargs
     ) -> List[RAGDocument]:
         retrieved_docs = await self.client.search(
             index=index,

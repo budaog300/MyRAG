@@ -1,14 +1,15 @@
 import time
-from fastapi import FastAPI, HTTPException, Request
+from typing import List
+from fastapi import FastAPI, HTTPException, Request, Depends, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
 
-from src.services.rag_service import RAGService
-from src.schemas.schemas import QuerySchema
+from src.services import RAGService, DocumentService
+from src.schemas.schemas import QuerySchema, IngestDataSchema
 from src.repository import QdrantRepository, ElasticRepository
 from src.retrieval import VectorRetriever, BM25Retriever, HybridRetriever
-from src.core.deps import RAGDep
+from src.core.deps import RAGDep, DocumentDep
 from src.repository.keyword_store.routes import router as router_vector_repo
 from src.repository.vector_store.routes import router as router_keyword_repo
 
@@ -20,10 +21,17 @@ async def lifespan(app: FastAPI):
 
     vector_retriever = VectorRetriever(app.state.repo)
     keyword_retriever = BM25Retriever(app.state.keyword_repo)
-    hybrid_retriever = HybridRetriever(vector_retriever, keyword_retriever)
+    hybrid_retriever = HybridRetriever([vector_retriever, keyword_retriever])
 
+    app.state.document_service = DocumentService(
+        app.state.repo,
+        app.state.keyword_repo,
+        model="sentence-transformers/all-MiniLM-L6-v2",
+    )
     app.state.rag_service = RAGService(hybrid_retriever, model="openai/gpt-4o-mini")
+
     yield
+
     await app.state.repo.close()
     await app.state.keyword_repo.close()
 
@@ -76,7 +84,27 @@ async def health():
     return {"message": "success"}
 
 
-@app.post("/search", summary="Запрос в RAG")
+# @app.post("/ingest", summary="Загрузить документацию")
+# async def ingest(
+#     doc_service: DocumentDep,
+#     collection_name: str = Form(...),
+#     chunk_size: int = Form(1000),
+#     chunk_overlap: int = Form(300),
+#     documents: list[UploadFile] = File(..., description="Files"),
+# ):
+#     # document_data = IngestDataSchema(
+#     #     collection_name=collection_name,
+#     #     chunk_size=chunk_size,
+#     #     chunk_overlap=chunk_overlap,
+#     # )
+
+#     print(documents)
+#     return await doc_service.ingest_files(
+#         collection_name, documents, chunk_size, chunk_overlap
+#     )
+
+
+@app.post("/search", summary="Запрос в документацию (RAG)")
 async def rag_query(query_data: QuerySchema, rag_service: RAGDep):
     answer = await rag_service.run(query_data.query, query_data.collection_name)
     if not answer:

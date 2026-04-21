@@ -14,6 +14,9 @@ class KeywordBaseRepository(ABC):
     async def get_indices(self): ...
 
     @abstractmethod
+    async def get_index_details(self, index: str): ...
+
+    @abstractmethod
     async def delete_index(self, index: str): ...
 
     @abstractmethod

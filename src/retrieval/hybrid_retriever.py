@@ -6,9 +6,8 @@ from src.schemas.schemas import RAGDocument
 
 
 class HybridRetriever(BaseRetriever):
-    def __init__(self, vector_retriever: BaseRetriever, bm25_retriever: BaseRetriever):
-        self.vector_retriever = vector_retriever
-        self.bm25_retriever = bm25_retriever
+    def __init__(self, retrievers: List[BaseRetriever]):
+        self.retrievers = retrievers
 
     async def retrieve(
         self,
@@ -17,39 +16,34 @@ class HybridRetriever(BaseRetriever):
         retrieve_limit: int = 30,
         merge_limit: int = 10,
     ) -> List[RAGDocument]:
-        vector_task = self.vector_retriever.retrieve(
-            query, collection_name, limit=retrieve_limit
-        )
-        bm25_task = self.bm25_retriever.retrieve(
-            query, collection_name, limit=retrieve_limit
-        )
-        vector_docs, bm25_docs = await asyncio.gather(vector_task, bm25_task)
-        return await self.merge_rrf(vector_docs, bm25_docs, limit=merge_limit)
+        tasks = [
+            r.retrieve(query, collection_name, limit=retrieve_limit)
+            for r in self.retrievers
+        ]
+        results = await asyncio.gather(*tasks)
+        return await self.merge_rrf(results, limit=merge_limit)
 
     async def merge_rrf(
         self,
-        vector_docs: List[RAGDocument],
-        bm25_docs: List[RAGDocument],
+        sources: List[List[RAGDocument]],
         limit: int = 10,
     ) -> List[RAGDocument]:
         k = 60
         scores = {}
-        for source in [vector_docs, bm25_docs]:
+        for source in sources:
             for rank, doc in enumerate(source, start=1):
                 if doc.id not in scores:
                     doc.metadata["rrf_score"] = 0.0
                     scores[doc.id] = doc
                 scores[doc.id].metadata["rrf_score"] += 1 / (k + rank)
-        all_docs = list(scores.values())
-        result = sorted(all_docs, key=lambda x: x.metadata["rrf_score"], reverse=True)
-        print([doc.id for doc in result])
+        result = sorted(
+            scores.values(), key=lambda x: x.metadata["rrf_score"], reverse=True
+        )
         return result[:limit]
 
-    async def merge_usual(
-        self, vector_docs: List[RAGDocument], bm25_docs: List[RAGDocument]
-    ) -> List[RAGDocument]:
+    async def merge_usual(self, sources: List[List[RAGDocument]]) -> List[RAGDocument]:
         unique_docs = {}
-        for source in [vector_docs, bm25_docs]:
+        for source in sources:
             for doc in source:
                 if doc.id not in unique_docs:
                     unique_docs[doc.id] = doc

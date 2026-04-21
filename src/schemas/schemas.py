@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Annotated
+from dataclasses import dataclass
 
 
 class QuerySchema(BaseModel):
@@ -31,3 +32,9 @@ class AddIndexSchema(BaseModel):
 
 class IndexSchema(BaseModel):
     name: str
+
+
+class IngestDataSchema(BaseModel):
+    collection_name: str
+    chunk_size: int = 1000
+    chunk_overlap: int = 300

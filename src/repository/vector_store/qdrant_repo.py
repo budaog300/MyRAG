@@ -76,6 +76,7 @@ class QdrantRepository(VectorBaseRepository):
         model: str = "sentence-transformers/all-MiniLM-L6-v2",
         limit: int = 10,
         with_payload: bool = True,
+        **kwargs,
     ) -> List[RAGDocument]:
         retrieved_docs = await self.client.query_points(
             collection_name=collection_name,
