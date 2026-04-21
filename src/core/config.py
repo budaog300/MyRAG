@@ -25,7 +25,24 @@ class SettingsQdrant(BaseSettings):
 
     @property
     def get_auth_data(self) -> dict:
-        return {"QDRANT_URL": self.QDRANT_URL, "QDRANT_API_KEY": self.QDRANT_API_KEY}
+        return {
+            "QDRANT_URL": self.QDRANT_URL,
+            "QDRANT_API_KEY": self.QDRANT_API_KEY,
+        }
+
+
+class SettingsElastic(BaseSettings):
+    ELASTIC_URL: str
+    ELASTIC_API_KEY: str
+
+    model_config = SettingsConfigDict(env_file=".env.elastic")
+
+    @property
+    def get_auth_data(self) -> dict:
+        return {
+            "ELASTIC_URL": self.ELASTIC_URL,
+            "ELASTIC_API_KEY": self.ELASTIC_API_KEY,
+        }
 
 
 class SettingsBot(BaseSettings):
@@ -40,4 +57,5 @@ class SettingsBot(BaseSettings):
 
 settingsAI = SettingsAI()
 settingsQdrant = SettingsQdrant()
+settingsElastic = SettingsElastic()
 settingsBot = SettingsBot()

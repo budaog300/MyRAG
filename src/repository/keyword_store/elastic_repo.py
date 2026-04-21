@@ -2,13 +2,16 @@ import asyncio
 from typing import List, Dict, Any
 from elasticsearch import AsyncElasticsearch, helpers
 
+from src.core.config import settingsElastic
 from src.repository import KeywordBaseRepository
 from src.schemas.schemas import RAGDocument, IndexSchema
+
+auth_data = settingsElastic.get_auth_data
 
 
 class ElasticRepository(KeywordBaseRepository):
     def __init__(self):
-        self.client = AsyncElasticsearch("http://localhost:9200")
+        self.client = AsyncElasticsearch(auth_data["ELASTIC_URL"])
 
     async def create_index(self, index: str):
         mappings = {

@@ -41,7 +41,6 @@ docker-compose.yml
 # Project specific
 *.md
 !README.md
-docs/
 tests/
 .gitlab-ci.yml
 .github/
