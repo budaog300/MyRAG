@@ -1,8 +1,8 @@
 import asyncio
 from pathlib import Path
-from src.services.document_service import DocumentService
-from src.services.schemas import RawDocumentSchema
-from src.repository import QdrantRepository, ElasticRepository
+from src.rag.services.document_service import DocumentService
+from src.rag.schemas.document import RawDocumentSchema
+from src.rag.repository import QdrantRepository, ElasticRepository
 
 
 async def main():

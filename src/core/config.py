@@ -19,29 +19,29 @@ class SettingsAI(BaseSettings):
 
 class SettingsQdrant(BaseSettings):
     QDRANT_URL: str
-    QDRANT_API_KEY: str
+    QDRANT_API_KEY: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env.qdrant")
 
     @property
     def get_auth_data(self) -> dict:
         return {
-            "QDRANT_URL": self.QDRANT_URL,
-            "QDRANT_API_KEY": self.QDRANT_API_KEY,
+            "url": self.QDRANT_URL,
+            "api_key": self.QDRANT_API_KEY,
         }
 
 
 class SettingsElastic(BaseSettings):
     ELASTIC_URL: str
-    ELASTIC_API_KEY: str
+    ELASTIC_API_KEY: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env.elastic")
 
     @property
     def get_auth_data(self) -> dict:
         return {
-            "ELASTIC_URL": self.ELASTIC_URL,
-            "ELASTIC_API_KEY": self.ELASTIC_API_KEY,
+            "hosts": self.ELASTIC_URL,
+            "api_key": self.ELASTIC_API_KEY,
         }
 
 

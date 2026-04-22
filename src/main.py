@@ -5,13 +5,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
 
-from src.services import RAGService, DocumentService
-from src.schemas.schemas import QuerySchema, IngestDataSchema
-from src.repository import QdrantRepository, ElasticRepository
-from src.retrieval import VectorRetriever, BM25Retriever, HybridRetriever
-from src.core.deps import RAGDep, DocumentDep
-from src.repository.keyword_store.routes import router as router_vector_repo
-from src.repository.vector_store.routes import router as router_keyword_repo
+from src.rag.services import RAGService, DocumentService
+from src.rag.repository import QdrantRepository, ElasticRepository
+from src.rag.retrieval import VectorRetriever, BM25Retriever, HybridRetriever
+from src.api.deps import RAGDep, DocumentDep
+from src.api.routes import router_vector_repo, router_keyword_repo
+from src.api.schemas import QuerySchema
 
 
 @asynccontextmanager

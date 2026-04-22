@@ -1,0 +1,10 @@
+from src.rag.retrieval import BaseRetriever
+from src.rag.repository import VectorBaseRepository
+
+
+class VectorRetriever(BaseRetriever):
+    def __init__(self, repo: VectorBaseRepository):
+        self.repo = repo
+
+    async def retrieve(self, query: str, collection_name: str, **kwargs):
+        return await self.repo.search_points(query, collection_name, **kwargs)
