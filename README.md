@@ -19,24 +19,26 @@
 
 ## 🧱 Архитектура
 
-src/
-│
-├── api/               API слой (HTTP интерфейс)
-│   ├── routes/
-│   ├── schemas/
-│   ├── deps.py        Зависимости
-│
-├── rag/               RAG ядро
-│   ├── services/      Оркестрация пайплайна
-│   ├── retrieval/     Vector / BM25 / Hybrid
-│   ├── repository/    Адаптеры хранилищ (Qdrant, Elastic и т.д.)
-│   ├── components/    Сборка RAG пайплайна
-│   ├── llm/           LLM слой
-│   ├── schemas/       Доменные модели (RAGDocument и др.)
-│   ├── utils/         Вспомогательные утилиты
-│
-├── core/              Конфиги, логирование, утилиты
-└── main.py            Точка входа в сервис
+```plaintext
+    src/
+    │
+    ├── api/               API слой (HTTP интерфейс)
+    │   ├── routes/
+    │   ├── schemas/
+    │   ├── deps.py        Зависимости
+    │
+    ├── rag/               RAG ядро
+    │   ├── services/      Оркестрация пайплайна
+    │   ├── retrieval/     Vector / BM25 / Hybrid
+    │   ├── repository/    Адаптеры хранилищ (Qdrant, Elastic и т.д.)
+    │   ├── components/    Сборка RAG пайплайна
+    │   ├── llm/           LLM слой
+    │   ├── schemas/       Доменные модели (RAGDocument и др.)
+    │   ├── utils/         Вспомогательные утилиты
+    │
+    ├── core/              Конфиги, логирование, утилиты
+    └── main.py            Точка входа в сервис
+```
 
 ---
 
