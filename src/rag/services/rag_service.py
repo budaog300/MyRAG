@@ -12,7 +12,7 @@ class RAGService:
         model: str = "openai/gpt-4o-mini",
     ):
         self.retriever = retriever
-        self.reranker = Rerank()
+        # self.reranker = Rerank()
         self.llm = LLMGenerator(model=model)
 
     async def full_step(
@@ -23,7 +23,7 @@ class RAGService:
         merge_limit: int = 10,
         **kwargs,
     ) -> str:
-        retrieved_docs = await self.retriever.retrieve(
+        docs = await self.retriever.retrieve(
             query,
             collection_name,
             retrieve_limit=retrieve_limit,
@@ -31,8 +31,8 @@ class RAGService:
         )
         # print(context)
 
-        reranked_docs = self.reranker.compress_documents(query, retrieved_docs)
-        context = [doc.content for doc in reranked_docs]
+        # docs = self.reranker.compress_documents(query, docs)
+        context = [doc.content for doc in docs]
         answer = await self.llm.generate(
             query,
             context,
