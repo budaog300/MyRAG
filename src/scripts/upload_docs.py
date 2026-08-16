@@ -14,17 +14,29 @@ async def main():
         repo, keyword_repo, model="sentence-transformers/all-MiniLM-L6-v2"
     )
     logger.info("DocumentService создан")
-    paths = [path for path in Path("./docs").iterdir() if path.is_file()]
-    docs = [
-        RawDocumentSchema(filename=str(path), content=path.read_text(encoding="utf-8"))
-        for path in paths
-    ]
-    logger.info("Документы считаны")
+    paths = [path for path in Path("./docs").glob("**/*") if path.is_file()]
+    docs = []
+    for path in paths:
+        # Для текстовых читаем сразу, для бинарных (pdf/docx) передаем байты
+        if path.suffix.lower() in [".txt", ".md"]:
+            docs.append(
+                RawDocumentSchema(
+                    source=path.name,
+                    content=path.read_text(encoding="utf-8"),
+                )
+            )
+        else:
+            docs.append(
+                RawDocumentSchema(
+                    source=path.name,
+                    file_bytes=path.read_bytes(),
+                )
+            )
+    logger.info(f"Считано документов: {len(docs)}")
     await doc_service.ingest_files("sber_docs", docs)
-    logger.info("Документы загружены")
+    logger.info("Документы успешно загружены")
     await repo.close()
     await keyword_repo.close()
-    logger.info("Загрузка окончена")
 
 
 if __name__ == "__main__":
