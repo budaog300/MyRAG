@@ -4,13 +4,13 @@ from qdrant_client.http import models
 from qdrant_client.models import Distance, VectorParams, PointStruct, Document
 
 from src.core.config import settingsQdrant
-from src.rag.repository.vector_store.base import VectorBaseRepository
+from src.rag.repositories import BaseVectorRepository
 from src.rag.schemas.document import CollectionSchema, RAGDocument
 
 auth_data = settingsQdrant.get_auth_data
 
 
-class QdrantRepository(VectorBaseRepository):
+class QdrantRepository(BaseVectorRepository):
     def __init__(self):
         self.client = AsyncQdrantClient(**auth_data)
 

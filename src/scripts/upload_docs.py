@@ -3,7 +3,7 @@ from pathlib import Path
 from src.core.logger import logger
 from src.rag.services.document_service import DocumentService
 from src.rag.schemas.document import RawDocumentSchema
-from src.rag.repository import QdrantRepository, ElasticRepository
+from src.rag.repositories import QdrantRepository, ElasticRepository
 
 
 async def main():

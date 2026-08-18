@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 from src.rag.schemas.document import RAGDocument
 
 
-class KeywordBaseRepository(ABC):
+class BaseKeywordRepository(ABC):
     def __init__(self):
         self.client = None
 

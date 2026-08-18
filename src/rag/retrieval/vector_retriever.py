@@ -1,9 +1,9 @@
 from src.rag.retrieval import BaseRetriever
-from src.rag.repository import VectorBaseRepository
+from src.rag.repositories import BaseVectorRepository
 
 
 class VectorRetriever(BaseRetriever):
-    def __init__(self, repo: VectorBaseRepository):
+    def __init__(self, repo: BaseVectorRepository):
         self.repo = repo
 
     async def retrieve(self, query: str, collection_name: str, **kwargs):

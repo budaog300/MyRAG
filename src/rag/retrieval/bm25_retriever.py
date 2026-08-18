@@ -1,9 +1,9 @@
 from src.rag.retrieval import BaseRetriever
-from src.rag.repository import KeywordBaseRepository
+from src.rag.repositories import BaseKeywordRepository
 
 
 class BM25Retriever(BaseRetriever):
-    def __init__(self, repo: KeywordBaseRepository):
+    def __init__(self, repo: BaseKeywordRepository):
         self.repo = repo
 
     async def retrieve(self, query: str, index: str, **kwargs):

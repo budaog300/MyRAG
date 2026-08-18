@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from src.rag.schemas.document import RAGDocument
 
 
-class VectorBaseRepository(ABC):
+class BaseVectorRepository(ABC):
     def __init__(self):
         self.client = None
 

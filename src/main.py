@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 
 from src.core.logger import logger
 from src.rag.services import RAGService, DocumentService
-from src.rag.repository import QdrantRepository, ElasticRepository
+from src.rag.repositories import QdrantRepository, ElasticRepository
 from src.rag.retrieval import VectorRetriever, BM25Retriever, HybridRetriever
 from src.api.deps import RAGDep, DocumentDep
 from src.api.routes import router_vector_repo, router_keyword_repo

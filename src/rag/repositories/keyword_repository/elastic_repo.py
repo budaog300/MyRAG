@@ -3,13 +3,13 @@ from typing import List, Dict, Any
 from elasticsearch import AsyncElasticsearch, helpers
 
 from src.core.config import settingsElastic
-from src.rag.repository import KeywordBaseRepository
+from src.rag.repositories import BaseKeywordRepository
 from src.rag.schemas.document import RAGDocument, IndexSchema
 
 auth_data = settingsElastic.get_auth_data
 
 
-class ElasticRepository(KeywordBaseRepository):
+class ElasticRepository(BaseKeywordRepository):
     def __init__(self):
         self.client = AsyncElasticsearch(**auth_data)
 
