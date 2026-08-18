@@ -14,8 +14,5 @@ class TextDocumentConverter(BaseDocumentConverter):
 
     SUPPORTED_EXTENSIONS: Set[str] = {".md", ".markdown", ".txt"}
 
-    def supports(self, file_path: Path) -> bool:
-        return file_path.suffix.lower() in self.SUPPORTED_EXTENSIONS
-
     async def convert(self, file_path: Path) -> str:
         return await asyncio.to_thread(file_path.read_text, encoding="utf-8")

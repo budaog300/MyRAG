@@ -1,11 +1,13 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Set
 
 class BaseDocumentConverter(ABC):
-    @abstractmethod
+    SUPPORTED_EXTENSIONS: Set[str] = set()
+
     def supports(self, file_path: Path) -> bool:
         """Проверяет, поддерживает ли данный конвертер расширение файла"""
-        pass
+        return file_path.suffix.lower() in self.SUPPORTED_EXTENSIONS
 
     @abstractmethod
     async def convert(self, file_path: Path) -> str:

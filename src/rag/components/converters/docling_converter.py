@@ -7,8 +7,8 @@ import time
 from pathlib import Path
 from typing import Set
 
-from docling.document_converter import DocumentConverter, PdfFormatOption
-from docling.datamodel.pipeline_options import PdfPipelineOptions, PictureDescriptionApiOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption, ImageFormatOption
+from docling.datamodel.pipeline_options import PdfPipelineOptions, PictureDescriptionApiOptions, TesseractOcrOptions
 from docling.datamodel.base_models import InputFormat
 
 from src.rag.components.converters import BaseDocumentConverter
@@ -22,8 +22,8 @@ class DoclingDocumentConverter(BaseDocumentConverter):
     """
 
     SUPPORTED_EXTENSIONS: Set[str] = {
-        ".pdf", ".docx", ".pptx", ".xlsx", 
-        ".html", ".htm", ".png", ".jpg", ".jpeg"
+        ".pdf", ".docx", ".pptx", ".xlsx",
+        ".html", ".htm", #".png", ".jpg", ".jpeg"
     }
 
     def __init__(self, vlm_config: VLMConfig | None = None):
@@ -38,18 +38,20 @@ class DoclingDocumentConverter(BaseDocumentConverter):
         pipeline_options.do_code_enrichment = True
         pipeline_options.images_scale = 2.0
 
+        # pipeline_options.do_ocr = True
+        # pipeline_options.ocr_options = TesseractOcrOptions()
+
         # Динамическое управление VLM
         if self.vlm_config.enabled:
+            print("vlm включен")
             pipeline_options.generate_picture_images = True
             pipeline_options.do_picture_description = True
             pipeline_options.enable_remote_services = True
 
-            # Формируем заголовки
             headers = {}
             if self.vlm_config.api_key:
                 headers["Authorization"] = f"Bearer {self.vlm_config.api_key}"
 
-            # Собираем параметры запроса
             params = {
                 "model": self.vlm_config.model_name,
                 "max_completion_tokens": self.vlm_config.max_tokens,
@@ -61,6 +63,7 @@ class DoclingDocumentConverter(BaseDocumentConverter):
                 headers=headers,
                 params=params,
                 timeout=self.vlm_config.timeout,
+                prompt=self.vlm_config.prompt
             )
         else:
             # Отключаем обработку и генерацию картинок для ускорения
@@ -70,12 +73,10 @@ class DoclingDocumentConverter(BaseDocumentConverter):
 
         return DocumentConverter(
             format_options={
-                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options),
+                InputFormat.IMAGE: ImageFormatOption(pipeline_options=pipeline_options),
             }
         )
-
-    def supports(self, file_path: Path) -> bool:
-        return file_path.suffix.lower() in self.SUPPORTED_EXTENSIONS
 
     async def convert(self, file_path: Path) -> str:
         start = time.perf_counter()
