@@ -12,7 +12,7 @@ class VLMImageConverter(BaseDocumentConverter):
     """
     Конвертер изображений (.png, .jpg, .jpeg, .webp), использующий
     прямой вызов Vision LLM (OpenAI / Ollama / Qwen-VL) для распознавания
-    и струкурирования текста в один проход.
+    и структурирования текста в один проход.
     """
 
     SUPPORTED_EXTENSIONS: Set[str] = {".png", ".jpg", ".jpeg", ".webp"}
@@ -26,9 +26,13 @@ class VLMImageConverter(BaseDocumentConverter):
             return base64.b64encode(image_file.read()).decode("utf-8")
 
     async def convert(self, file_path: Path) -> str:
+        # Проверка включения VLM обработки
+        if not self.vlm_config.enabled:
+            print(f"[VLMImageConverter] VLM отключен (enabled=False). Пропуск обработки изображения: {file_path.name}")
+            return f"<!-- Обработка изображения {file_path.name} пропущена (VLM отключен) -->"
+
         base64_image = await asyncio.to_thread(self._encode_image, file_path)
         
-        # Определяем mime-тип изображения
         ext = file_path.suffix.lower().replace(".", "")
         mime_type = "image/jpeg" if ext in ["jpg", "jpeg"] else f"image/{ext}"
 
@@ -64,6 +68,5 @@ class VLMImageConverter(BaseDocumentConverter):
             )
             response.raise_for_status()
             data = response.json()
-            print(data)
             extracted_text = data["choices"][0]["message"]["content"].strip()
             return f"## Содержимое изображения: {file_path.name}\n\n{extracted_text}"

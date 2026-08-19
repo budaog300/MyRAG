@@ -1,36 +1,60 @@
-from typing import Optional, Sequence, List
-from sentence_transformers import CrossEncoder
+from typing import List, Optional
+from src.ai.base import BaseRerankerProvider
+from src.schemas import RAGDocument  # замените на ваш импорт RAGDocument
 
-from src.rag.schemas.document import RAGDocument
 
+class RAGDocumentReranker:
+    """
+    Высокоуровневый компонент RAG. 
+    Принимает RAGDocument, вызывает провайдер реранкинга 
+    и возвращает сжатый/отсортированный список с обновленными метаданными.
+    """
 
-class Rerank:
-    model_name: str = "BAAI/bge-reranker-v2-m3"
-    top_n: int = 5
-    model: CrossEncoder = CrossEncoder(model_name)
+    def __init__(
+        self, 
+        reranker: Optional[BaseRerankerProvider] = None, 
+        top_n: int = 5
+    ):
+        self.reranker = reranker
+        self.top_n = top_n
 
-    def rerank(self, query: str, docs: List[str]):
-        model_inputs = [[query, doc] for doc in docs]
-        scores = self.model.predict(model_inputs)
-        results = sorted(enumerate(scores), key=lambda x: x[1], reverse=True)
-        return results[: self.top_n]
-
-    def compress_documents(
+    async def compress_documents(
         self,
         query: str,
         documents: List[RAGDocument],
+        top_n: Optional[int] = None,
     ) -> List[RAGDocument]:
-        if len(documents) == 0:
+        """
+        Реранкает документы и обновляет их rerank_score в metadata.
+        """
+        if not documents:
             return []
 
-        list_docs = list(documents)
-        _docs = [doc.content for doc in list_docs]
-        results = self.rerank(query, _docs)
-        final_results = []
-        print(results)
-        for r in results:
-            doc = list_docs[r[0]]
-            doc.metadata["rerank_score"] = r[1]
-            final_results.append(doc)
+        limit = top_n if top_n is not None else self.top_n
 
-        return final_results
+        # Фолбэк: если реранкер отключен в конфиге (None), 
+        # просто возвращаем первые N документов без изменений
+        if self.reranker is None:
+            return documents[:limit]
+
+        # 1. Извлекаем чистый текст из RAGDocument
+        texts = [doc.content for doc in documents]
+
+        # 2. Делаем запрос к низкоуровневому провайдеру
+        results = await self.reranker.rerank(
+            query=query, 
+            documents=texts, 
+            top_n=limit
+        )
+
+        # 3. Собираем итоговый список RAGDocument с обновленными метаданными
+        ranked_docs: List[RAGDocument] = []
+        for item in results:
+            doc_idx = item["index"]
+            score = item["score"]
+
+            doc = documents[doc_idx]
+            doc.metadata["rerank_score"] = score
+            ranked_docs.append(doc)
+
+        return ranked_docs

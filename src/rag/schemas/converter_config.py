@@ -1,15 +1,24 @@
 from typing import Dict, Any, Optional
+from enum import Enum
 from pydantic import BaseModel, Field, ConfigDict
 
 
+class EngineMode(str, Enum):
+    LOCAL = "local"
+    API = "api"
+
+
 class VLMConfig(BaseModel):
+    """Конфигурация распознавания изображений в pdf"""
     model_config = ConfigDict(extra="allow")
 
     enabled: bool = True
+    mode: EngineMode = EngineMode.LOCAL
+
     api_url: str = "http://localhost:11434/v1/chat/completions" 
     api_key: Optional[str] = None
     model_name: str = "qwen3-vl:2b"
-    max_tokens: int = 4096
+    max_tokens: int = 8192
     timeout: int = 90
     prompt: str = """
         Ты — OCR и VLM-аналитик для базы знаний. Внимательно изучи ВСЁ ИЗОБРАЖЕНИЕ от верхнего до нижнего края.
@@ -27,11 +36,22 @@ class VLMConfig(BaseModel):
 
         **Описание картинки:**
         [Краткое описание]
-    """
+    """.strip()
 
     @property
     def extra_params(self) -> Dict[str, Any]:
         """Возвращает все доп. аргументы, переданные через kwargs"""
         return self.model_extra or {}
 
-    
+
+class CodeFormulaConfig(BaseModel):
+    """Конфигурация распознавания кода и формул"""
+    enabled: bool = True
+    mode: EngineMode = EngineMode.LOCAL
+
+    api_url: str = "http://localhost:11434/v1/chat/completions"
+    model_name: str = "qwen3-vl:2b"
+    api_key: Optional[str] = None
+    prompt: str = "Extract all formulas in LaTeX and code blocks cleanly."
+    max_tokens: int = 8192
+    temperature: float = 0.0
