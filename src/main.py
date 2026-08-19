@@ -6,9 +6,11 @@ from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
 
 from src.core.logger import logger
-from src.rag.services import RAGService, DocumentService
+from src.core.config import settingsAI
+from src.rag.services import RAGService, DocumentService, AIService
 from src.rag.repositories import QdrantRepository, ElasticRepository
-from src.rag.retrieval import VectorRetriever, BM25Retriever, HybridRetriever
+from src.rag.retrievers import VectorRetriever, BM25Retriever, HybridRetriever
+from src.core.ai_config import AIServiceConfig
 from src.api.deps import RAGDep, DocumentDep
 from src.api.routes import router_vector_repo, router_keyword_repo
 from src.api.schemas import QuerySchema
@@ -20,6 +22,9 @@ async def lifespan(app: FastAPI):
     app.state.repo = QdrantRepository()
     app.state.keyword_repo = ElasticRepository()
 
+    ai_config = settingsAI.build_ai_config()
+    ai_service = AIService(ai_config)
+
     vector_retriever = VectorRetriever(app.state.repo)
     keyword_retriever = BM25Retriever(app.state.keyword_repo)
     hybrid_retriever = HybridRetriever([vector_retriever, keyword_retriever])
@@ -29,7 +34,7 @@ async def lifespan(app: FastAPI):
     #     app.state.keyword_repo,
     #     model="sentence-transformers/all-MiniLM-L6-v2",
     # )
-    app.state.rag_service = RAGService(hybrid_retriever, model="openai/gpt-4o-mini")
+    app.state.rag_service = RAGService(ai_service, hybrid_retriever)
     logger.info("Приложение запущено!")
 
     yield

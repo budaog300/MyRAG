@@ -2,7 +2,7 @@ import httpx
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 
-from src.rag.ai.provider_config import ModelConfig
+from src.core.ai_config import ModelConfig
 
 
 class BaseAIProvider:

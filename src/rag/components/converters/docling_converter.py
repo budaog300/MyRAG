@@ -21,7 +21,8 @@ from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.datamodel.base_models import InputFormat
 
 from src.rag.components.converters import BaseDocumentConverter
-from src.rag.schemas.converter_config import VLMConfig, CodeFormulaConfig, EngineMode
+from src.rag.services import AIService
+from src.core.ai_config import CodeFormulaConfig, EngineMode
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("httpx").setLevel(logging.DEBUG)
@@ -43,15 +44,16 @@ class DoclingDocumentConverter(BaseDocumentConverter):
 
     def __init__(
         self,
-        vlm_config: Optional[VLMConfig] = None,
+        ai_service: AIService,
         code_formula_config: Optional[CodeFormulaConfig] = None,
     ):        
         print("\n=== [DEBUG INIT START] ===")
-        self.vlm_config = vlm_config or VLMConfig(enabled=False)
+        self.ai_service = ai_service
         self.code_formula_config = code_formula_config or CodeFormulaConfig(enabled=True, mode=EngineMode.LOCAL)
         
-        print(f"[DEBUG] VLMConfig Enabled: {self.vlm_config.enabled}, Mode: {getattr(self.vlm_config, 'mode', None)}, URL: {getattr(self.vlm_config, 'api_url', None)}")
-        print(f"[DEBUG] CodeFormulaConfig Enabled: {self.code_formula_config.enabled}, Mode: {self.code_formula_config.mode}, URL: {self.code_formula_config.api_url}")
+        vlm_status = f"Active ({ai_service.config.vlm.model_name})" if ai_service.vlm else "Disabled"
+        print(f"[DEBUG] VLM Status: {vlm_status}")
+        print(f"[DEBUG] CodeFormula Mode: {self.code_formula_config.mode}")
         
         self.converter = self._build_converter()
         print("=== [DEBUG INIT END] ===\n")
@@ -85,11 +87,27 @@ class DoclingDocumentConverter(BaseDocumentConverter):
                         "max_tokens": self.code_formula_config.max_tokens,
                     }
                 )
+                prompt = """
+                Ты — OCR и VLM-аналитик для базы знаний. Внимательно изучи ВСЁ ИЗОБРАЖЕНИЕ от верхнего до нижнего края.
 
+                Сделай следующее:
+                1. ВЫПИШИ ВЕСЬ ТЕКСТ: Найди и дословно перепиши абсолютно все заголовки, подзаголовки, списки и подписи к иконкам, весь текст.
+                2. СМЫСЛ И СТРУКТУРА: В 2-3 предложениях описать главный смысл инфографики или схемы.
+                3. НЕ ОПИСЫВАЙ ВИЗУАЛЬНЫЙ СТИЛЬ (цвета, фон, градиенты): фокус только на данных и тексте.
+
+                Формат ответа:
+                **Текст на картинке:**
+                - [Заголовок]
+                - [Пункт 1]
+                - [Пункт 2] ...
+
+                **Описание картинки:**
+                [Краткое описание]
+            """.strip()
                 vlm_spec = VlmModelSpec(
                     name=self.code_formula_config.model_name,
                     default_repo_id="docling-project/CodeFormula",
-                    prompt=self.code_formula_config.prompt,
+                    prompt=prompt,
                     response_format=ResponseFormat.MARKDOWN,
                     api_overrides={
                         VlmEngineType.API: api_config,
@@ -117,31 +135,32 @@ class DoclingDocumentConverter(BaseDocumentConverter):
         # ----------------------------------------------------
         # 2. Настройка описания картинок (Picture Description)
         # ----------------------------------------------------
-        if self.vlm_config.enabled:
+        if self.ai_service.vlm is not None:
+            vlm_config = self.ai_service.config.vlm
             pipeline_options.generate_picture_images = True
             pipeline_options.do_picture_description = True
             
-            if self.vlm_config.mode == EngineMode.API:
-                print(f"[DEBUG BUILD] Picture Description -> Настройка API: {self.vlm_config.api_url}")
+            if vlm_config.mode == EngineMode.API:
+                print(f"[DEBUG BUILD] Picture Description -> API: {vlm_config.api_url}")
                 headers = {}
-                if self.vlm_config.api_key:
-                    headers["Authorization"] = f"Bearer {self.vlm_config.api_key}"
+                if vlm_config.api_key:
+                    headers["Authorization"] = f"Bearer {vlm_config.api_key}"
 
                 params = {
-                    "model": self.vlm_config.model_name,
-                    "max_completion_tokens": self.vlm_config.max_tokens,
-                    **self.vlm_config.extra_params,
+                    "model": vlm_config.model_name,
+                    "max_completion_tokens": vlm_config.max_tokens,
+                    **vlm_config.extra_params,
                 }
 
                 pipeline_options.picture_description_options = PictureDescriptionApiOptions(
-                    url=self.vlm_config.api_url,
-                    headers=headers,
+                    url=vlm_config.api_url,
+                    headers=headers if headers else None,
                     params=params,
-                    timeout=self.vlm_config.timeout,
-                    prompt=self.vlm_config.prompt,
+                    timeout=vlm_config.timeout,
+                    prompt=vlm_config.prompt,
                 )
             else:
-                print(f"[DEBUG BUILD] Picture Description -> Режим LOCAL ({self.vlm_config.model_name})")
+                print(f"[DEBUG BUILD] Picture Description -> LOCAL ({vlm_config.model_name})")
         else:
             print("[DEBUG BUILD] Picture Description -> ОТКЛЮЧЕНО (do_picture_description=False)")
             pipeline_options.generate_picture_images = False

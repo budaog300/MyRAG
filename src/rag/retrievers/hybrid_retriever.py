@@ -1,7 +1,7 @@
 import asyncio
 from typing import List
 
-from src.rag.retrieval import BaseRetriever
+from src.rag.retrievers import BaseRetriever
 from src.rag.schemas.document import RAGDocument
 
 
@@ -21,9 +21,9 @@ class HybridRetriever(BaseRetriever):
             for r in self.retrievers
         ]
         results = await asyncio.gather(*tasks)
-        return await self.merge_rrf(results, limit=merge_limit)
+        return await self._merge_rrf(results, limit=merge_limit)
 
-    async def merge_rrf(
+    async def _merge_rrf(
         self,
         sources: List[List[RAGDocument]],
         limit: int = 10,
@@ -41,7 +41,7 @@ class HybridRetriever(BaseRetriever):
         )
         return result[:limit]
 
-    async def merge_usual(self, sources: List[List[RAGDocument]]) -> List[RAGDocument]:
+    async def _merge_usual(self, sources: List[List[RAGDocument]]) -> List[RAGDocument]:
         unique_docs = {}
         for source in sources:
             for doc in source:

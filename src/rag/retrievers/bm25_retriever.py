@@ -1,4 +1,4 @@
-from src.rag.retrieval import BaseRetriever
+from src.rag.retrievers import BaseRetriever
 from src.rag.repositories import BaseKeywordRepository
 
 
