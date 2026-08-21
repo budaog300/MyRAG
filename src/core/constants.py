@@ -1,5 +1,7 @@
 from pathlib import Path
 
+DOCUMENT_DELIMITER: str = "\n\n<!-- DELIMITER -->\n\n"
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 LOG_DIR = BASE_DIR / "logs"

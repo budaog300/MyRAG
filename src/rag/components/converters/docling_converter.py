@@ -38,7 +38,7 @@ class DoclingDocumentConverter(BaseDocumentConverter):
     """
 
     SUPPORTED_EXTENSIONS: Set[str] = {
-        ".pdf", ".docx", ".pptx", ".xlsx",
+        ".pdf", ".docx", ".pptx",
         ".html", ".htm",
     }
 
@@ -87,23 +87,7 @@ class DoclingDocumentConverter(BaseDocumentConverter):
                         "max_tokens": self.code_formula_config.max_tokens,
                     }
                 )
-                prompt = """
-                Ты — OCR и VLM-аналитик для базы знаний. Внимательно изучи ВСЁ ИЗОБРАЖЕНИЕ от верхнего до нижнего края.
-
-                Сделай следующее:
-                1. ВЫПИШИ ВЕСЬ ТЕКСТ: Найди и дословно перепиши абсолютно все заголовки, подзаголовки, списки и подписи к иконкам, весь текст.
-                2. СМЫСЛ И СТРУКТУРА: В 2-3 предложениях описать главный смысл инфографики или схемы.
-                3. НЕ ОПИСЫВАЙ ВИЗУАЛЬНЫЙ СТИЛЬ (цвета, фон, градиенты): фокус только на данных и тексте.
-
-                Формат ответа:
-                **Текст на картинке:**
-                - [Заголовок]
-                - [Пункт 1]
-                - [Пункт 2] ...
-
-                **Описание картинки:**
-                [Краткое описание]
-            """.strip()
+                
                 vlm_spec = VlmModelSpec(
                     name=self.code_formula_config.model_name,
                     default_repo_id="docling-project/CodeFormula",
@@ -151,13 +135,29 @@ class DoclingDocumentConverter(BaseDocumentConverter):
                     "max_completion_tokens": vlm_config.max_tokens,
                     **vlm_config.extra_params,
                 }
-
+                prompt = """
+                    Ты — OCR и VLM-аналитик для базы знаний. Внимательно изучи ВСЁ ИЗОБРАЖЕНИЕ от верхнего до нижнего края.
+    
+                    Сделай следующее:
+                    1. ВЫПИШИ ВЕСЬ ТЕКСТ: Найди и дословно перепиши абсолютно все заголовки, подзаголовки, списки и подписи к иконкам, весь текст.
+                    2. СМЫСЛ И СТРУКТУРА: В 2-3 предложениях описать главный смысл инфографики или схемы.
+                    3. НЕ ОПИСЫВАЙ ВИЗУАЛЬНЫЙ СТИЛЬ (цвета, фон, градиенты): фокус только на данных и тексте.
+    
+                    Формат ответа:
+                    **Текст на картинке:**
+                    - [Заголовок]
+                    - [Пункт 1]
+                    - [Пункт 2] ...
+    
+                    **Описание картинки:**
+                    [Краткое описание]
+                """.strip()
                 pipeline_options.picture_description_options = PictureDescriptionApiOptions(
                     url=vlm_config.api_url,
                     headers=headers if headers else None,
                     params=params,
                     timeout=vlm_config.timeout,
-                    prompt=vlm_config.prompt,
+                    prompt=prompt,
                 )
             else:
                 print(f"[DEBUG BUILD] Picture Description -> LOCAL ({vlm_config.model_name})")

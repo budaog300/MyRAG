@@ -1,9 +1,5 @@
 import uuid
 import asyncio
-from langchain_text_splitters import (
-    RecursiveCharacterTextSplitter,
-    MarkdownHeaderTextSplitter,
-)
 from langchain_community.document_loaders import TextLoader
 from typing import List, Dict, Any
 
@@ -12,6 +8,7 @@ from src.rag.services.convert_service import DocumentConverterService
 from src.rag.schemas.document import RawDocumentSchema, RAGDocument
 from src.rag.repositories import BaseVectorRepository
 from src.rag.repositories import BaseKeywordRepository
+
 
 class DocumentService:
     def __init__(

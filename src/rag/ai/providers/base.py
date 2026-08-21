@@ -18,7 +18,7 @@ class BaseAIProvider:
             async with httpx.AsyncClient(timeout=self.config.timeout) as client:
                 response = await client.post(
                     self.config.api_url, 
-                    json=payload, 
+                    json=payload,
                     headers=self.headers
                 )
                 response.raise_for_status()

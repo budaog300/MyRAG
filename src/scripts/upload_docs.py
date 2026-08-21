@@ -5,7 +5,7 @@ from src.core.ai_config import AIServiceConfig
 from src.rag.services import DocumentService, DocumentConverterService, AIService
 from src.rag.schemas.document import RawDocumentSchema
 from src.rag.repositories import QdrantRepository, ElasticRepository
-from src.rag.components.converters import DoclingDocumentConverter, TextDocumentConverter, TesseractImageConverter, VLMImageConverter
+from src.rag.components.converters import DoclingDocumentConverter, TextDocumentConverter, VLMImageConverter, ExcelConverter
 from src.rag.components.splitters import MarkdownDocumentSplitter
 
 
@@ -20,8 +20,9 @@ async def main():
     logger.info("Инициализируем конвертеры...")
     docling_converter = DoclingDocumentConverter(ai_service)
     text_converter = TextDocumentConverter()
+    excel_converter = ExcelConverter()
     image_converter = VLMImageConverter(ai_service)
-    converter_service = DocumentConverterService([docling_converter, text_converter, image_converter])
+    converter_service = DocumentConverterService([docling_converter, text_converter, image_converter, excel_converter])
     logger.info("Инициализируем сплиттер...")
     splitter = MarkdownDocumentSplitter()
     doc_service = DocumentService(repo, keyword_repo, converter_service, splitter, model="sentence-transformers/all-MiniLM-L6-v2")

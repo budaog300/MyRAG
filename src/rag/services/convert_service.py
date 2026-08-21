@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List
 from src.rag.components.converters import BaseDocumentConverter
 
+
 class DocumentConverterService:
     def __init__(self, converters: List[BaseDocumentConverter]):
         self.converters = converters
