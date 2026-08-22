@@ -6,9 +6,11 @@ from typing import Optional, Dict, Any
 class RAGDocument(BaseModel):
     id: str | None = None
     content: str
+    raw_content: str | None = None
     score: float | None = None
     metadata: dict = Field(default_factory=dict)
     source: str | None = None
+    is_parent: bool = False
 
 
 class IngestDataSchema(BaseModel):

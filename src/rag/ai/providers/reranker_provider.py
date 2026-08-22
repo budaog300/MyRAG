@@ -42,10 +42,9 @@ class RerankerProvider(BaseAIProvider, BaseRerankerProvider):
         texts = [doc.content for doc in documents]
 
         results = await self.rerank(query=query, documents=texts, top_n=limit)
-
         ranked_docs: List[RAGDocument] = []
         for item in results:
-            doc = documents[item["index"]]
+            doc: RAGDocument = documents[item["index"]]
             doc.metadata["rerank_score"] = item["score"]
             ranked_docs.append(doc)
 

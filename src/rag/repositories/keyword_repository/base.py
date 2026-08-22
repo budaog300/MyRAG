@@ -29,4 +29,12 @@ class BaseKeywordRepository(ABC):
     async def search(self, query: str, index: str, **kwargs) -> List[RAGDocument]: ...
 
     @abstractmethod
+    async def get_documents_by_ids(
+        self,
+        index: str,
+        ids: List[str],
+        **kwargs
+    ) -> List[RAGDocument]: ...
+
+    @abstractmethod
     async def close(): ...

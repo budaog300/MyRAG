@@ -44,4 +44,12 @@ class BaseVectorRepository(ABC):
     ) -> List[RAGDocument]: ...
 
     @abstractmethod
+    async def get_points_by_ids(
+        self,
+        collection_name: str,
+        ids: List[str],
+        **kwargs
+    ) -> List[RAGDocument]: ...
+
+    @abstractmethod
     async def close(self): ...

@@ -36,7 +36,6 @@ class RAGService:
                 documents=docs, 
                 top_n=top_n
             )
-
         context_text = "\n\n---\n\n".join([doc.content for doc in docs[:top_n]])
         
         prompt = (

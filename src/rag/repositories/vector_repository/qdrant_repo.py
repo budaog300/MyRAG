@@ -27,41 +27,49 @@ class QdrantRepository(BaseVectorRepository):
             ),
         )
 
+        parents_collection_name = f"{collection_name}_parents"
+        await self.client.create_collection(
+            collection_name=parents_collection_name,
+            vectors_config={},
+        )
+
     async def get_collections(self) -> List[CollectionSchema]:
         result = await self.client.get_collections()
-        return [CollectionSchema(name=col.name) for col in result.collections]
+        return [CollectionSchema(name=col.name) for col in result.collections if not col.name.endswith("_parents")]
 
     async def get_collection_details(self, collection_name: str):
         result = await self.client.get_collection(collection_name)
         return result
 
     async def clear_collection(self, collection_name: str):
-        await self.client.delete(
-            collection_name=collection_name, points_selector=models.Filter()
-        )
+        await self.client.delete(collection_name=collection_name, points_selector=models.Filter())
+        parents_collection_name = f"{collection_name}_parents"
+        if await self.client.collection_exists(parents_collection_name):
+            await self.client.delete(collection_name=parents_collection_name, points_selector=models.Filter())
 
     async def delete_collection(
         self,
         collection_name: str,
     ):
         await self.client.delete_collection(collection_name=collection_name)
+        parents_collection_name = f"{collection_name}_parents"
+        if await self.client.collection_exists(parents_collection_name):
+            await self.client.delete_collection(collection_name=parents_collection_name)
 
     async def upsert(
         self,
         collection_name: str,
         items: List[Dict[str, Any]],
         model: str = "sentence-transformers/all-MiniLM-L6-v2",
+        is_vector: bool = True
     ):
         points = [
             PointStruct(
-                id=i + 1,
-                vector=Document(
-                    text=item["content"],
-                    model=model,
-                ),
+                id=item["metadata"]["chunk_id"],
+                vector=Document(text=item["content"], model=model) if is_vector else {},
                 payload=item,
             )
-            for i, item in enumerate(items)
+            for item in items            
         ]
 
         await self.client.upsert(
@@ -85,19 +93,41 @@ class QdrantRepository(BaseVectorRepository):
             limit=limit,
         )
 
-        print(f"Qdrant output={retrieved_docs}")
-
         results = [
             RAGDocument(
                 id=str(point.id),
                 content=point.payload.get("content", ""),
+                raw_content=point.payload.get("raw_content", ""),
                 score=point.score,
                 metadata=point.payload.get("metadata", {}),
                 source=point.payload.get("source", ""),
             )
             for point in retrieved_docs.points
         ]
+        return results
 
+    async def get_documents_by_ids(
+        self,
+        collection_name: str,
+        ids: List[str],
+        with_payload: bool = True,
+    ) -> List[RAGDocument]:
+        points = await self.client.retrieve(
+            collection_name=collection_name,
+            ids=ids,
+            with_payload=with_payload,
+        )
+
+        results = [
+            RAGDocument(
+                id=str(point.id),
+                content=point.payload.get("content", ""),
+                raw_content=point.payload.get("raw_content", ""),
+                metadata=point.payload.get("metadata", {}),
+                source=point.payload.get("source", ""),
+            )
+            for point in points
+        ]
         return results
 
     async def close(self):

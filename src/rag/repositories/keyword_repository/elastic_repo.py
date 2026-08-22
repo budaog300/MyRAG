@@ -25,33 +25,41 @@ class ElasticRepository(BaseKeywordRepository):
             }
         }
         await self.client.indices.create(index=index, mappings=mappings)
+        parents_index = f"{index}_parents"
+        await self.client.indices.create(index=parents_index, mappings=mappings)
 
     async def get_indices(self) -> List[IndexSchema]:
         indices = await self.client.cat.indices(format="json")
         print(indices)
-        return [IndexSchema(name=index["index"]) for index in indices]
+        return [IndexSchema(name=index["index"]) for index in indices if not index["index"].endswith("_parents") and not index["index"].startswith(".")]
 
     async def get_index_details(self, index: str):
         return await self.client.count(index=index)
 
     async def delete_index(self, index: str):
         await self.client.indices.delete(index=index)
+        parents_index = f"{index}_parents"
+        if await self.client.indices.exists(index=parents_index):
+            await self.client.indices.delete(index=parents_index)
 
     async def clear_index(self, index: str):
-        return await self.client.delete_by_query(index=index, query={"match_all": {}})
+        await self.client.delete_by_query(index=index, query={"match_all": {}})
+        parents_index = f"{index}_parents"
+        if await self.client.indices.exists(index=parents_index):
+            await self.client.delete_by_query(index=parents_index, query={"match_all": {}})
 
     async def index_documents(self, index: str, items: List[Dict[str, Any]]):
         actions = [
             {
                 "_index": index,
-                "_id": i + 1,
+                "_id": item["metadata"]["chunk_id"],
                 "_source": {
                     "content": item["content"],
                     "metadata": item["metadata"],
                     "source": item["source"],
                 },
             }
-            for i, item in enumerate(items)
+            for item in items
         ]
         success, failed = await helpers.async_bulk(self.client, actions)
         print("SUCCESS:", success)
@@ -67,9 +75,7 @@ class ElasticRepository(BaseKeywordRepository):
             size=limit,
         )
 
-        print(f"Elastic output={retrieved_docs}")
-
-        result = [
+        results = [
             RAGDocument(
                 id=hit["_id"],
                 content=hit["_source"]["content"],
@@ -79,7 +85,27 @@ class ElasticRepository(BaseKeywordRepository):
             )
             for hit in retrieved_docs["hits"]["hits"]
         ]
-        return result
+        return results
+
+    async def get_documents_by_ids(
+        self,
+        index: str,
+        ids: List[str],
+        **kwargs
+    ) -> List[RAGDocument]:
+        response = await self.client.mget(index=index, ids=ids)
+
+        results = [
+            RAGDocument(
+                id=doc["_id"],
+                content=doc["_source"]["content"],
+                metadata=doc["_source"]["metadata"],
+                source=doc["_source"]["source"],
+            )
+            for doc in response["docs"]
+            if doc.get("found", False)
+        ]
+        return results
 
     async def close(self):
         await self.client.close()

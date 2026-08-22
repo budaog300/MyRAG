@@ -32,20 +32,35 @@ class DocumentService:
         chunk_size: int = 1000,
         chunk_overlap: int = 100,
     ) -> None:
-        all_chunks: List[RAGDocument] = []
+        all_children: List[Dict[str, Any]] = []
+        all_parents: List[Dict[str, Any]] = []
 
         for doc in documents:
-            markdown_content = await self.converter_service.convert_to_markdown(doc.source)
+            markdown_text = await self.converter_service.convert_to_markdown(doc.source)
 
             chunks = self.splitter.split(
                 doc=doc,
-                markdown_text=markdown_content,
+                markdown_text=markdown_text,
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
             )
-            all_chunks.extend([c.model_dump() if hasattr(c, 'model_dump') else c for c in chunks])
+            for chunk in chunks:
+                chunk_dict = chunk.model_dump() if hasattr(chunk, 'model_dump') else chunk
+                if chunk_dict.get("is_parent"):
+                    all_parents.append(chunk_dict)
+                else:
+                    all_children.append(chunk_dict)
 
-        await asyncio.gather(
-            self.repo.upsert(collection_name, all_chunks, model=self.model),
-            self.keyword_repo.index_documents(collection_name, all_chunks),
-        )
+        tasks = [
+            self.repo.upsert(collection_name, all_children, model=self.model, is_vector=True),
+            self.keyword_repo.index_documents(collection_name, all_children)
+        ]
+        
+        if all_parents:
+            parents_collection_name = f"{collection_name}_parents"
+            tasks.extend([
+                self.repo.upsert(parents_collection_name, all_parents, is_vector=False),
+                self.keyword_repo.index_documents(parents_collection_name, all_parents)
+            ])
+
+        await asyncio.gather(*tasks)

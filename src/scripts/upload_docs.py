@@ -1,3 +1,4 @@
+import time
 import asyncio
 from pathlib import Path
 from src.core.logger import logger
@@ -32,12 +33,14 @@ async def main():
             source=str(path),
             metadata={"filename": path.name}
         )
-        for path in Path("./docs").glob("**/*") 
+        for path in Path("./docs2").glob("**/*") 
         if path.is_file()
     ]
-    logger.info(f"Считано документов: {len(raw_docs)}") 
+    logger.info(f"Считано документов: {len(raw_docs)}")
+    start = time.perf_counter()
     await doc_service.ingest_files("sber_docs", raw_docs)
-    logger.info("Документы успешно загружены")
+    elapsed_time = time.perf_counter() - start
+    logger.info(f"Документы успешно загружены (потраченное время: {elapsed_time})")
     await repo.close()
     await keyword_repo.close()
 

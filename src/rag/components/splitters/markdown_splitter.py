@@ -40,11 +40,10 @@ class MarkdownDocumentSplitter(BaseDocumentSplitter):
         )
 
         final_chunks: List[RAGDocument] = []
-        chunk_index = 0
         
         sections = markdown_text.split(self.delimiter)
         
-        for section in sections:
+        for section_idx, section in enumerate(sections):
             if not section.strip():
                 continue
 
@@ -54,21 +53,22 @@ class MarkdownDocumentSplitter(BaseDocumentSplitter):
                 sub_chunks = text_splitter.split_text(header_split.page_content)
                 breadcrumbs = " > ".join([str(v) for v in header_split.metadata.values()])
 
-                for sub_chunk in sub_chunks:
+                for chunk_index, sub_chunk in enumerate(sub_chunks):
                     context_prefix = (
                         f"[Источник: {doc.source} | Раздел: {breadcrumbs}]\n\n"
                         if breadcrumbs
                         else f"[Источник: {doc.source}]\n\n"
                     )
                     enriched_content = context_prefix + sub_chunk
-
+                    chunk_id = str(uuid.uuid5(
+                        uuid.NAMESPACE_DNS, 
+                        f"{doc.doc_id}:{section_idx}:{chunk_index}:{sub_chunk}"
+                    ))
                     chunk_metadata = {
-                        "chunk_id": str(uuid.uuid4()),
-                        "doc_id": doc.doc_id,
-                        "source": doc.source,
+                        "chunk_id": chunk_id,
+                        "doc_id": doc.doc_id,                        
                         "chunk_index": chunk_index,
                         "breadcrumbs": breadcrumbs,
-                        **header_split.metadata,
                         **doc.metadata,
                     }
 
@@ -76,8 +76,8 @@ class MarkdownDocumentSplitter(BaseDocumentSplitter):
                         content=enriched_content,
                         raw_content=sub_chunk,
                         metadata=chunk_metadata,
+                        source=doc.source,
                     )
                     final_chunks.append(chunk)
-                    chunk_index += 1
 
         return final_chunks
