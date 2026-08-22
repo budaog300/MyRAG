@@ -60,7 +60,7 @@ class DocumentService:
             parents_collection_name = f"{collection_name}_parents"
             tasks.extend([
                 self.repo.upsert(parents_collection_name, all_parents, is_vector=False),
-                self.keyword_repo.index_documents(parents_collection_name, all_parents)
+                # self.keyword_repo.index_documents(parents_collection_name, all_parents)
             ])
 
         await asyncio.gather(*tasks)

@@ -9,7 +9,10 @@ from src.rag.schemas.document import RawDocumentSchema, RAGDocument
 
 class HierarchicalMarkdownSplitter(BaseDocumentSplitter):
     def __init__(
-        self, 
+        self,
+        parent_chunk_size: int = 3000,
+        chunk_size: int = 400,
+        chunk_overlap: int = 50,
         headers_to_split_on: list[tuple[str, str]] | None = None,
         delimiter: str = DOCUMENT_DELIMITER,
     ):
@@ -20,29 +23,30 @@ class HierarchicalMarkdownSplitter(BaseDocumentSplitter):
             ("####", "Header_4"),
         ]
         self.delimiter = delimiter
+        self.parent_chunk_size = parent_chunk_size
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
 
     def split(
         self, 
         doc: RawDocumentSchema, 
         markdown_text: str,
-        parent_chunk_size: int = 3000,
-        child_chunk_size: int = 400,
-        child_chunk_overlap: int = 50
-    ) -> Tuple[List[RAGDocument], List[RAGDocument]]:        
+        **kwargs
+    ) -> List[RAGDocument]:        
         md_splitter = MarkdownHeaderTextSplitter(
             headers_to_split_on=self.headers_to_split_on,
             strip_headers=False,
         )       
 
         parent_text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=parent_chunk_size,
+            chunk_size=self.parent_chunk_size,
             chunk_overlap=200,
             separators=["\n\n\n", "\n\n", "\n", " ", ""]
         )
 
         child_text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=child_chunk_size,
-            chunk_overlap=child_chunk_overlap,
+            chunk_size=self.chunk_size,
+            chunk_overlap=self.chunk_overlap,
             separators=["\n\n", "\n", " ", ""]
         )
         

@@ -13,7 +13,7 @@ class BaseVectorRepository(ABC):
     ): ...
 
     @abstractmethod
-    async def get_collections(self): ...
+    async def get_collections(self, include_parents: bool = False): ...
 
     @abstractmethod
     async def get_collection_details(self): ...
@@ -39,12 +39,12 @@ class BaseVectorRepository(ABC):
         query: str,
         collection_name: str,
         model: str = "sentence-transformers/all-MiniLM-L6-v2",
-        limit: int = 10,
+        limit: int = 30,
         **kwargs
     ) -> List[RAGDocument]: ...
 
     @abstractmethod
-    async def get_points_by_ids(
+    async def get_documents_by_ids(
         self,
         collection_name: str,
         ids: List[str],

@@ -8,8 +8,7 @@ class BaseDocumentSplitter(ABC):
         self, 
         doc: RawDocumentSchema, 
         markdown_text: str,
-        chunk_size: int = 1000,
-        chunk_overlap: int = 100
+        **kwargs
     ) -> List[RAGDocument]:
         """Разбивает Markdown текст на обогащенные чанки"""
         pass

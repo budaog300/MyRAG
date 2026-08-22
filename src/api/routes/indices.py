@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from typing import List
 
 from src.api.deps import KeywordRepoDep
@@ -13,8 +13,14 @@ async def create_index(index: AddIndexSchema, repo: KeywordRepoDep):
 
 
 @router.get("/", summary="Получить все индексы")
-async def get_indices(repo: KeywordRepoDep) -> List[IndexSchema]:
-    return await repo.get_indices()
+async def get_indices(
+    repo: KeywordRepoDep,
+    include_parents: bool = Query(
+        default=False, 
+        description="Включать ли служебные родительские коллекции (*_parents)"
+    )
+) -> List[IndexSchema]:
+    return await repo.get_indices(include_parents=include_parents)
 
 
 @router.get("/{index}", summary="Получить данные об индексе")

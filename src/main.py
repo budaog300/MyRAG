@@ -9,6 +9,7 @@ from src.core.logger import logger
 from src.core.config import settingsAI
 from src.rag.services import RAGService, DocumentService, AIService
 from src.rag.repositories import QdrantRepository, ElasticRepository
+from src.rag.repositories.context_enricher import ContextEnricher
 from src.rag.retrievers import VectorRetriever, BM25Retriever, HybridRetriever
 from src.core.ai_config import AIServiceConfig
 from src.api.deps import RAGDep, DocumentDep
@@ -21,6 +22,7 @@ async def lifespan(app: FastAPI):
     logger.info("Запускаем приложение...")
     app.state.repo = QdrantRepository()
     app.state.keyword_repo = ElasticRepository()
+    enricher = ContextEnricher(app.state.repo)
 
     ai_config = settingsAI.build_ai_config()
     ai_service = AIService(ai_config)
@@ -34,7 +36,7 @@ async def lifespan(app: FastAPI):
     #     app.state.keyword_repo,
     #     model="sentence-transformers/all-MiniLM-L6-v2",
     # )
-    app.state.rag_service = RAGService(ai_service, hybrid_retriever)
+    app.state.rag_service = RAGService(ai_service, hybrid_retriever, enricher)
     logger.info("Приложение запущено!")
 
     yield
@@ -274,7 +276,7 @@ async def health():
 
 @app.post("/search", summary="Запрос в документацию (RAG)")
 async def rag_query(query_data: QuerySchema, rag_service: RAGDep):
-    answer = await rag_service.run(query_data.query, query_data.collection_name, retrieve_limit=10)
+    answer = await rag_service.run(query_data.query, query_data.collection_name, retrieve_limit=30)
     if not answer:
         raise HTTPException(status_code=500, detail="Ошибка ответа либо ответа нет")
     return answer

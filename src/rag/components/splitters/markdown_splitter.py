@@ -9,7 +9,9 @@ from src.rag.schemas.document import RawDocumentSchema, RAGDocument
 
 class MarkdownDocumentSplitter(BaseDocumentSplitter):
     def __init__(
-        self, 
+        self,
+        chunk_size: int = 400,
+        chunk_overlap: int = 50,
         headers_to_split_on: list[tuple[str, str]] | None = None,
         delimiter: str = DOCUMENT_DELIMITER,
     ):
@@ -20,13 +22,14 @@ class MarkdownDocumentSplitter(BaseDocumentSplitter):
             ("####", "Header_4"),
         ]
         self.delimiter = delimiter
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
 
     def split(
         self, 
         doc: RawDocumentSchema, 
         markdown_text: str,
-        chunk_size: int = 1000,
-        chunk_overlap: int = 100
+        **kwargs
     ) -> List[RAGDocument]:
         md_splitter = MarkdownHeaderTextSplitter(
             headers_to_split_on=self.headers_to_split_on,
@@ -34,8 +37,8 @@ class MarkdownDocumentSplitter(BaseDocumentSplitter):
         )
         
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
+            chunk_size=self.chunk_size,
+            chunk_overlap=self.chunk_overlap,
             separators=["\n\n\n", "\n\n", "\n", ". ", " ", ""],
         )
 

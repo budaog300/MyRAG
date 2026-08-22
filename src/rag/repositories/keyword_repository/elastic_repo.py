@@ -28,9 +28,10 @@ class ElasticRepository(BaseKeywordRepository):
         parents_index = f"{index}_parents"
         await self.client.indices.create(index=parents_index, mappings=mappings)
 
-    async def get_indices(self) -> List[IndexSchema]:
+    async def get_indices(self, include_parents: bool = False) -> List[IndexSchema]:
         indices = await self.client.cat.indices(format="json")
-        print(indices)
+        if include_parents:
+            return [IndexSchema(name=index["index"]) for index in indices]
         return [IndexSchema(name=index["index"]) for index in indices if not index["index"].endswith("_parents") and not index["index"].startswith(".")]
 
     async def get_index_details(self, index: str):
@@ -67,7 +68,7 @@ class ElasticRepository(BaseKeywordRepository):
         await self.client.indices.refresh(index=index)
 
     async def search(
-        self, query: str, index: str, limit: int = 10, **kwargs
+        self, query: str, index: str, limit: int = 30, **kwargs
     ) -> List[RAGDocument]:
         retrieved_docs = await self.client.search(
             index=index,

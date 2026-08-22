@@ -2,6 +2,7 @@ from typing import List, Optional, Dict, Any
 
 from src.rag.retrievers import BaseRetriever
 from src.rag.services.ai_service import AIService
+from src.rag.repositories.context_enricher import ContextEnricher
 
 
 class RAGService:
@@ -9,9 +10,11 @@ class RAGService:
         self,
         ai_service: AIService,
         retriever: BaseRetriever,
+        enricher: Optional[ContextEnricher] = None
     ):
         self.ai_service = ai_service
         self.retriever = retriever
+        self.enricher = enricher
 
     async def _full_step(
         self,
@@ -29,13 +32,18 @@ class RAGService:
             retrieve_limit=retrieve_limit,
             merge_limit=merge_limit,
         )
-
+        print(docs)
+        print(len(docs))
         if self.ai_service.reranker:
             docs = await self.ai_service.reranker.compress_documents(
                 query=query, 
                 documents=docs, 
                 top_n=top_n
             )
+        print(f"reranked docs ({len(docs)})", docs)
+        if self.enricher:
+            docs = await self.enricher.enrich(docs, collection_name)
+        print(f"enriched docs ({len(docs)})", docs)
         context_text = "\n\n---\n\n".join([doc.content for doc in docs[:top_n]])
         
         prompt = (

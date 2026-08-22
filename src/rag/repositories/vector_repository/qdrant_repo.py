@@ -33,8 +33,10 @@ class QdrantRepository(BaseVectorRepository):
             vectors_config={},
         )
 
-    async def get_collections(self) -> List[CollectionSchema]:
+    async def get_collections(self, include_parents: bool = False) -> List[CollectionSchema]:
         result = await self.client.get_collections()
+        if include_parents:
+            return [CollectionSchema(name=col.name) for col in result.collections]
         return [CollectionSchema(name=col.name) for col in result.collections if not col.name.endswith("_parents")]
 
     async def get_collection_details(self, collection_name: str):
@@ -82,7 +84,7 @@ class QdrantRepository(BaseVectorRepository):
         query: str,
         collection_name: str,
         model: str = "sentence-transformers/all-MiniLM-L6-v2",
-        limit: int = 10,
+        limit: int = 30,
         with_payload: bool = True,
         **kwargs,
     ) -> List[RAGDocument]:

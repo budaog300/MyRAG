@@ -7,7 +7,7 @@ from src.rag.services import DocumentService, DocumentConverterService, AIServic
 from src.rag.schemas.document import RawDocumentSchema
 from src.rag.repositories import QdrantRepository, ElasticRepository
 from src.rag.components.converters import DoclingDocumentConverter, TextDocumentConverter, VLMImageConverter, ExcelConverter
-from src.rag.components.splitters import MarkdownDocumentSplitter
+from src.rag.components.splitters import MarkdownDocumentSplitter, HierarchicalMarkdownSplitter
 
 
 
@@ -25,7 +25,7 @@ async def main():
     image_converter = VLMImageConverter(ai_service)
     converter_service = DocumentConverterService([docling_converter, text_converter, image_converter, excel_converter])
     logger.info("Инициализируем сплиттер...")
-    splitter = MarkdownDocumentSplitter()
+    splitter = HierarchicalMarkdownSplitter()
     doc_service = DocumentService(repo, keyword_repo, converter_service, splitter, model="sentence-transformers/all-MiniLM-L6-v2")
     logger.info("Парсим файлы...")
     raw_docs = [
@@ -33,7 +33,7 @@ async def main():
             source=str(path),
             metadata={"filename": path.name}
         )
-        for path in Path("./docs2").glob("**/*") 
+        for path in Path("./docs").glob("**/*") 
         if path.is_file()
     ]
     logger.info(f"Считано документов: {len(raw_docs)}")

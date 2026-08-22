@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, Query
 from typing import Annotated, List
 
 from src.api.deps import RepoDep
@@ -12,9 +12,15 @@ async def create_collection(collection: AddCollectionSchema, repo: RepoDep):
     await repo.create_collection(collection.name, size=384)
 
 
-@router.get("/", summary="Получить все коллекции")
-async def get_collections(repo: RepoDep) -> List[CollectionSchema]:
-    return await repo.get_collections()
+@router.get("/", summary="Получить список коллекций")
+async def get_collections(
+    repo: RepoDep, 
+    include_parents: bool = Query(
+        default=False, 
+        description="Включать ли служебные родительские коллекции (*_parents)"
+    )
+) -> List[CollectionSchema]:
+    return await repo.get_collections(include_parents=include_parents)
 
 
 @router.get("/{collection_name}", summary="Получить данные о коллекции")
