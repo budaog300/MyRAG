@@ -40,7 +40,7 @@ class BaseLLMProvider(ABC):
         pass
 
 
-class BaseEmbeddingsProvider(ABC):
+class BaseEmbedderProvider(ABC):
     @abstractmethod
     async def embed_documents(self, texts: List[str]) -> List[List[float]]:
         pass

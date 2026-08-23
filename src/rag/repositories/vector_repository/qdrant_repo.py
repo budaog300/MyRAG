@@ -6,13 +6,15 @@ from qdrant_client.models import Distance, VectorParams, PointStruct, Document
 from src.core.config import settingsQdrant
 from src.rag.repositories import BaseVectorRepository
 from src.rag.schemas.document import CollectionSchema, RAGDocument
+from src.rag.ai.providers import BaseEmbedderProvider
 
 auth_data = settingsQdrant.get_auth_data
 
 
 class QdrantRepository(BaseVectorRepository):
-    def __init__(self):
+    def __init__(self, embedder: BaseEmbedderProvider):
         self.client = AsyncQdrantClient(**auth_data)
+        self.embedder = embedder
 
     async def create_collection(
         self,
@@ -62,16 +64,18 @@ class QdrantRepository(BaseVectorRepository):
         self,
         collection_name: str,
         items: List[Dict[str, Any]],
-        model: str = "sentence-transformers/all-MiniLM-L6-v2",
+        # model: str = "sentence-transformers/all-MiniLM-L6-v2",
         is_vector: bool = True
     ):
+        texts = [item["content"] for item in items]
+        embeddings = await self.embedder.embed_documents(texts)
         points = [
             PointStruct(
                 id=item["metadata"]["chunk_id"],
-                vector=Document(text=item["content"], model=model) if is_vector else {},
+                vector=vector if is_vector else {},
                 payload=item,
             )
-            for item in items            
+            for item, vector in zip(items, embeddings)          
         ]
 
         await self.client.upsert(
@@ -83,14 +87,15 @@ class QdrantRepository(BaseVectorRepository):
         self,
         query: str,
         collection_name: str,
-        model: str = "sentence-transformers/all-MiniLM-L6-v2",
+        # model: str = "sentence-transformers/all-MiniLM-L6-v2",
         limit: int = 30,
         with_payload: bool = True,
         **kwargs,
     ) -> List[RAGDocument]:
+        query_vector = await self.embedder.embed_query(query)
         retrieved_docs = await self.client.query_points(
             collection_name=collection_name,
-            query=Document(text=query, model=model),
+            query=query_vector,
             with_payload=with_payload,
             limit=limit,
         )
@@ -127,6 +132,7 @@ class QdrantRepository(BaseVectorRepository):
                 raw_content=point.payload.get("raw_content", ""),
                 metadata=point.payload.get("metadata", {}),
                 source=point.payload.get("source", ""),
+                is_parent=point.payload.get("is_parent", ""),
             )
             for point in points
         ]

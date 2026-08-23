@@ -26,6 +26,9 @@ class ContextEnricher:
         for doc in docs:
             p_id = doc.metadata.get("parent_id")
             if p_id and p_id in parents_map:
-                doc.content = parents_map[p_id].content
+                parent_doc = parents_map[p_id]
+                doc.content = parent_doc.content
+                doc.metadata.update(parent_doc.metadata)
+                doc.is_parent = parent_doc.is_parent
 
         return docs

@@ -20,12 +20,12 @@ from src.api.schemas import QuerySchema
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Запускаем приложение...")
-    app.state.repo = QdrantRepository()
-    app.state.keyword_repo = ElasticRepository()
-    enricher = ContextEnricher(app.state.repo)
-
     ai_config = settingsAI.build_ai_config()
     ai_service = AIService(ai_config)
+    
+    app.state.repo = QdrantRepository(embedder=ai_service.embedder)
+    app.state.keyword_repo = ElasticRepository()
+    enricher = ContextEnricher(app.state.repo)
 
     vector_retriever = VectorRetriever(app.state.repo)
     keyword_retriever = BM25Retriever(app.state.keyword_repo)

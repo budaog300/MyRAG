@@ -16,15 +16,13 @@ class DocumentService:
         repo: BaseVectorRepository,
         keyword_repo: BaseKeywordRepository,
         converter_service: DocumentConverterService,
-        splitter: BaseDocumentSplitter,
-        model: str = "sentence-transformers/all-MiniLM-L6-v2",
+        splitter: BaseDocumentSplitter
     ):
         self.repo = repo
         self.keyword_repo = keyword_repo
         self.converter_service = converter_service
         self.splitter = splitter
-        self.model = model
-
+        
     async def ingest_files(
         self,
         collection_name: str,
@@ -52,7 +50,7 @@ class DocumentService:
                     all_children.append(chunk_dict)
 
         tasks = [
-            self.repo.upsert(collection_name, all_children, model=self.model, is_vector=True),
+            self.repo.upsert(collection_name, all_children, is_vector=True),
             self.keyword_repo.index_documents(collection_name, all_children)
         ]
         

@@ -9,7 +9,8 @@ router = APIRouter(prefix="/api/v1/collections", tags=["Vector Repository"])
 
 @router.post("/", summary="Создать коллекцию")
 async def create_collection(collection: AddCollectionSchema, repo: RepoDep):
-    await repo.create_collection(collection.name, size=384)
+    await repo.create_collection(collection.name, collection.size, collection.distance)
+    return {"message": f"Коллекция '{collection.name}' создана успешно"}
 
 
 @router.get("/", summary="Получить список коллекций")

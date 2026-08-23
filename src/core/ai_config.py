@@ -42,6 +42,6 @@ class CodeFormulaConfig(BaseModel):
 
 class AIServiceConfig(BaseModel):
     llm: Optional[ModelConfig] = None
-    embeddings: Optional[ModelConfig] = None
+    embedder: Optional[ModelConfig] = None
     vlm: Optional[ModelConfig] = None
     reranker: Optional[ModelConfig] = None

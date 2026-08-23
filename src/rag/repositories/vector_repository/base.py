@@ -29,7 +29,7 @@ class BaseVectorRepository(ABC):
         self,
         collection_name: str,
         items: List[Dict[str, Any]],
-        model: str = "sentence-transformers/all-MiniLM-L6-v2",
+        # model: str = "sentence-transformers/all-MiniLM-L6-v2",
         **kwargs
     ): ...
 
@@ -38,7 +38,7 @@ class BaseVectorRepository(ABC):
         self,
         query: str,
         collection_name: str,
-        model: str = "sentence-transformers/all-MiniLM-L6-v2",
+        # model: str = "sentence-transformers/all-MiniLM-L6-v2",
         limit: int = 30,
         **kwargs
     ) -> List[RAGDocument]: ...

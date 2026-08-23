@@ -71,7 +71,7 @@ class SettingsAI(BaseSettings):
                 api_url=self.LLM_API_URL,
                 api_key=self.LLM_API_KEY,
             ) if self.LLM_ENABLED else None,
-            embeddings=ModelConfig(
+            embedder=ModelConfig(
                 enabled=self.EMBED_ENABLED,
                 mode=EngineMode(self.EMBED_MODE),
                 model_name=self.EMBED_MODEL,

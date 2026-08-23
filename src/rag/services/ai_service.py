@@ -15,9 +15,9 @@ class AIService:
         )
         
         # Инициализация Embeddings
-        self.embeddings: Optional[BaseEmbeddingsProvider] = (
-            self._init_embeddings(config.embeddings)
-            if config.embeddings
+        self.embedder: Optional[BaseEmbedderProvider] = (
+            self._init_embedder(config.embedder)
+            if config.embedder
             else None
         )
         
@@ -40,7 +40,7 @@ class AIService:
             return LLMProvider(config)
         raise ValueError(f"Неподдерживаемый режим для LLM: {config.mode}")
 
-    def _init_embeddings(self, config: ModelConfig) -> BaseEmbeddingsProvider:
+    def _init_embedder(self, config: ModelConfig) -> BaseEmbedderProvider:
         if config.mode in (EngineMode.API, EngineMode.LOCAL):
             return EmbeddingsProvider(config)
         raise ValueError(f"Неподдерживаемый режим для Embeddings: {config.mode}")

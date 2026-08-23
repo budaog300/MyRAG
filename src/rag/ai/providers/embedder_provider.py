@@ -1,7 +1,8 @@
 from typing import List
-from src.rag.ai.providers import BaseEmbeddingsProvider, BaseAIProvider
+from src.rag.ai.providers import BaseEmbedderProvider, BaseAIProvider
 
-class EmbeddingsProvider(BaseAIProvider, BaseEmbeddingsProvider):
+
+class EmbeddingsProvider(BaseAIProvider, BaseEmbedderProvider):
     async def embed_documents(self, texts: List[str]) -> List[List[float]]:
         payload = {
             "model": self.config.model_name,

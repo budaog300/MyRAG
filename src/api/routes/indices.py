@@ -10,6 +10,7 @@ router = APIRouter(prefix="/api/v1/indices", tags=["Keyword Repository"])
 @router.post("/", summary="Создать индекс")
 async def create_index(index: AddIndexSchema, repo: KeywordRepoDep):
     await repo.create_index(index.name)
+    return {"message": f"Индекс '{index.name}' создан успешно"}
 
 
 @router.get("/", summary="Получить все индексы")

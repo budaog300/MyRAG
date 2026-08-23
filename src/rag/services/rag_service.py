@@ -43,7 +43,7 @@ class RAGService:
         print(f"reranked docs ({len(docs)})", docs)
         if self.enricher:
             docs = await self.enricher.enrich(docs, collection_name)
-        print(f"enriched docs ({len(docs)})", docs)
+            print(f"enriched docs ({len(docs)})", docs)
         context_text = "\n\n---\n\n".join([doc.content for doc in docs[:top_n]])
         
         prompt = (

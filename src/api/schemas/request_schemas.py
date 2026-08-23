@@ -10,6 +10,8 @@ class QuerySchema(BaseModel):
 
 class AddCollectionSchema(BaseModel):
     name: str = Field(..., min_length=5, description="Введите название коллекции")
+    size: int = Field(..., ge=1, description="Введите размер векторной размерности")
+    distance: str = Field(..., min_length=1, description="Введите вид расстояния")
 
 
 class AddIndexSchema(BaseModel):

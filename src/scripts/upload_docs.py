@@ -2,7 +2,7 @@ import time
 import asyncio
 from pathlib import Path
 from src.core.logger import logger
-from src.core.ai_config import AIServiceConfig
+from src.core.config import settingsAI
 from src.rag.services import DocumentService, DocumentConverterService, AIService
 from src.rag.schemas.document import RawDocumentSchema
 from src.rag.repositories import QdrantRepository, ElasticRepository
@@ -13,11 +13,12 @@ from src.rag.components.splitters import MarkdownDocumentSplitter, HierarchicalM
 
 async def main():
     logger.info("Начинаем загрузку документов в базы...")
-    repo = QdrantRepository()
-    keyword_repo = ElasticRepository()
-    logger.info("Создаем AI конфиг и AI сервис...")
-    ai_config = AIServiceConfig()
+    ai_config = settingsAI.build_ai_config()
     ai_service = AIService(ai_config)
+    print(ai_service.__dict__)
+    repo = QdrantRepository(ai_service.embedder)
+    keyword_repo = ElasticRepository()
+    logger.info("Создаем AI конфиг и AI сервис...")   
     logger.info("Инициализируем конвертеры...")
     docling_converter = DoclingDocumentConverter(ai_service)
     text_converter = TextDocumentConverter()
@@ -26,7 +27,7 @@ async def main():
     converter_service = DocumentConverterService([docling_converter, text_converter, image_converter, excel_converter])
     logger.info("Инициализируем сплиттер...")
     splitter = HierarchicalMarkdownSplitter()
-    doc_service = DocumentService(repo, keyword_repo, converter_service, splitter, model="sentence-transformers/all-MiniLM-L6-v2")
+    doc_service = DocumentService(repo, keyword_repo, converter_service, splitter)
     logger.info("Парсим файлы...")
     raw_docs = [
         RawDocumentSchema(
