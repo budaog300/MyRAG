@@ -3,10 +3,16 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 
 from src.core.ai_config import ModelConfig
+from src.core.exceptions.provider_exceptions import (
+    AIProviderAuthError,
+    AIProviderError,
+    AIProviderRateLimitError,
+    AIProviderTimeoutError
+)
 
 
 class BaseAIProvider:
-    """Базовый класс для всех OpenAI-совместимых провайдеров"""
+    """Базовый класс для всех провайдеров"""
     def __init__(self, config: ModelConfig):
         self.config = config
         self.headers = {"Content-Type": "application/json"}
@@ -23,9 +29,25 @@ class BaseAIProvider:
                 )
                 response.raise_for_status()
                 return response.json()
+                
+        except httpx.HTTPStatusError as e:
+            status_code = e.response.status_code
+            detail = e.response.text
+            if status_code in (401, 403):
+                raise AIProviderAuthError(detail)
+            elif status_code == 429:
+                raise AIProviderRateLimitError(detail)
+            else:
+                raise AIProviderError(f"HTTP ошибка {status_code}: {detail}", status_code=502)
+                
+        except httpx.TimeoutException as e:
+            raise AIProviderTimeoutError(str(e))
+            
+        except httpx.RequestError as e:
+            raise AIProviderError(f"Сетевая ошибка при запросе к AI-провайдеру: {e}")
+            
         except Exception as e:
-            print(f"Ошибка при генерации ответа: {e}")
-            raise e
+            raise AIProviderError(f"Непредвиденная ошибка AI-провайдера: {e}")
 
 
 class BaseLLMProvider(ABC):

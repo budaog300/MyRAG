@@ -2,6 +2,7 @@ import base64
 import httpx
 from typing import List, Optional, Dict, Any
 from src.rag.ai.providers import BaseLLMProvider, BaseAIProvider
+from src.core.exceptions.provider_exceptions import LLMError
 
 
 class LLMProvider(BaseAIProvider, BaseLLMProvider):
@@ -25,4 +26,7 @@ class LLMProvider(BaseAIProvider, BaseLLMProvider):
             **self.config.extra_params,
         }
         data = await self._post(payload)
-        return data["choices"][0]["message"]["content"]
+        try:
+            return data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as e:
+            raise LLMError(f"Не удалось извлечь ответ LLM: {e}")

@@ -10,5 +10,5 @@ class BaseDocumentSplitter(ABC):
         markdown_text: str,
         **kwargs
     ) -> List[RAGDocument]:
-        """Разбивает Markdown текст на обогащенные чанки"""
+        """Разбивает Markdown текст на чанки"""
         pass

@@ -1,6 +1,11 @@
 from typing import List
 from src.rag.repositories import BaseVectorRepository
 from src.rag.schemas.document import RAGDocument
+from src.core.exceptions.repo_exceptions import (
+    CollectionNotFoundError,
+    ParentDocumentNotFoundError,
+    VectorDatabaseError,
+)
 
 
 class ContextEnricher:
@@ -8,6 +13,9 @@ class ContextEnricher:
         self.repo = repo
 
     async def enrich(self, docs: List[RAGDocument], collection_name: str) -> List[RAGDocument]:
+        if not docs:
+            return []
+
         parent_ids = list({
             doc.metadata["parent_id"] 
             for doc in docs 
@@ -17,18 +25,31 @@ class ContextEnricher:
         if not parent_ids:
             return docs
 
-        parents = await self.repo.get_documents_by_ids(
-            collection_name=f"{collection_name}_parents",
-            ids=parent_ids,
-        )
+        parents_collection_name = f"{collection_name}_parents"
+
+        try:
+            parents = await self.repo.get_documents_by_ids(
+                collection_name=parents_collection_name,
+                ids=parent_ids,
+            )
+        except CollectionNotFoundError:
+            raise CollectionNotFoundError(parents_collection_name)
+        except VectorDatabaseError as e:
+            raise
+
         parents_map = {p.id: p for p in parents}
 
         for doc in docs:
             p_id = doc.metadata.get("parent_id")
-            if p_id and p_id in parents_map:
-                parent_doc = parents_map[p_id]
-                doc.content = parent_doc.content
-                doc.metadata.update(parent_doc.metadata)
-                doc.is_parent = parent_doc.is_parent
+            if not p_id:
+                continue
+
+            parent_doc = parents_map.get(p_id)
+            if not parent_doc:
+                raise ParentDocumentNotFoundError(parent_id=p_id, collection_name=collection_name)
+
+            doc.content = parent_doc.content
+            doc.metadata.update(parent_doc.metadata)
+            doc.is_parent = getattr(parent_doc, "is_parent", True)
 
         return docs

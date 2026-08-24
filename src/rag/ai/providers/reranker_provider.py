@@ -2,6 +2,7 @@ import httpx
 from typing import List, Dict, Any, Optional
 from src.rag.ai.providers import BaseRerankerProvider, BaseAIProvider
 from src.rag.schemas.document import RAGDocument
+from src.core.exceptions.provider_exceptions import AIProviderResponseParseError, RerankerError
 
 
 class RerankerProvider(BaseAIProvider, BaseRerankerProvider):
@@ -21,13 +22,20 @@ class RerankerProvider(BaseAIProvider, BaseRerankerProvider):
 
         data = await self._post(payload)
 
-        results = []
-        for item in data.get("results", data.get("data", [])):
-            results.append({
-                "index": item["index"],
-                "score": item.get("relevance_score", item.get("score", 0.0))
-            })
-        return results
+        try:
+            results = []
+            items = data.get("results", data.get("data"))
+            if items is None:
+                raise AIProviderResponseParseError("Поле с результатами реранкинга не найдено")
+
+            for item in items:
+                results.append({
+                    "index": item["index"],
+                    "score": item.get("relevance_score", item.get("score", 0.0))
+                })
+            return results
+        except (KeyError, TypeError, IndexError) as e:
+            raise RerankerError(f"Ошибка парсинга результатов реранкинга: {e}")
 
     async def compress_documents(
         self,
@@ -42,10 +50,14 @@ class RerankerProvider(BaseAIProvider, BaseRerankerProvider):
         texts = [doc.content for doc in documents]
 
         results = await self.rerank(query=query, documents=texts, top_n=limit)
+        
         ranked_docs: List[RAGDocument] = []
         for item in results:
-            doc: RAGDocument = documents[item["index"]]
-            doc.metadata["rerank_score"] = item["score"]
-            ranked_docs.append(doc)
+            try:
+                doc: RAGDocument = documents[item["index"]]
+                doc.metadata["rerank_score"] = item["score"]
+                ranked_docs.append(doc)
+            except IndexError:
+                raise RerankerError(f"Индекс {item['index']} из ответа реранкера выйдет за пределы списка документов")
 
         return ranked_docs

@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
 
+from src.api.exception_handlers import register_exception_handlers
 from src.core.logger import logger
 from src.core.config import settingsAI
 from src.rag.services import RAGService, DocumentService, AIService, CollectionService
@@ -47,7 +48,7 @@ async def lifespan(app: FastAPI):
     logger.info("Приложение остановлено!")
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, title="RAG Service API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -56,6 +57,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_credentials=True,
 )
+register_exception_handlers(app)
+app.include_router(router_vector_repo, prefix="/api/v1")
+app.include_router(router_keyword_repo, prefix="/api/v1")
+app.include_router(router_admin_repo, prefix="/api/v1")
 
 
 @app.middleware("http")
@@ -280,11 +285,6 @@ async def rag_query(query_data: QuerySchema, rag_service: RAGDep):
     if not answer:
         raise HTTPException(status_code=500, detail="Ошибка ответа либо ответа нет")
     return answer
-
-
-app.include_router(router_vector_repo, prefix="/api/v1")
-app.include_router(router_keyword_repo, prefix="/api/v1")
-app.include_router(router_admin_repo, prefix="/api/v1")
 
 
 if __name__ == "__main__":

@@ -1,12 +1,18 @@
+import logging
 import asyncio
 from typing import List
 
 from src.rag.retrievers import BaseRetriever
 from src.rag.schemas.document import RAGDocument
+from src.core.exceptions.retriever_exceptions import HybridRetrieverError
+
+logger = logging.getLogger(__name__)
 
 
 class HybridRetriever(BaseRetriever):
     def __init__(self, retrievers: List[BaseRetriever]):
+        if not retrievers:
+            raise HybridRetrieverError("Список ретриверов не может быть пустым")
         self.retrievers = retrievers
 
     async def retrieve(
@@ -20,14 +26,30 @@ class HybridRetriever(BaseRetriever):
             r.retrieve(query, collection_name, limit=retrieve_limit)
             for r in self.retrievers
         ]
-        results = await asyncio.gather(*tasks)
-        return await self._merge_rrf(results, limit=merge_limit)
+        responses = await asyncio.gather(*tasks, return_exceptions=True)
+        valid_results: List[List[RAGDocument]] = []
+        errors = []
 
+        for res in responses:
+            if isinstance(res, Exception):
+                logger.error(f"Один из ретриверов упал во время гибридного поиска: {res}", exc_info=res)
+                errors.append(res)
+            elif isinstance(res, list):
+                valid_results.append(res)
+
+        if len(errors) == len(self.retrievers):
+            raise HybridRetrieverError(f"Все источники поиска вернули ошибку: {errors}")
+
+        return await self._merge_rrf(valid_results, limit=merge_limit)
+    
     async def _merge_rrf(
         self,
         sources: List[List[RAGDocument]],
         limit: int = 10,
     ) -> List[RAGDocument]:
+        if not sources:
+            return []
+        
         k = 60
         scores = {}
         for source in sources:
