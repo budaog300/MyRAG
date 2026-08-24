@@ -7,13 +7,12 @@ from contextlib import asynccontextmanager
 
 from src.core.logger import logger
 from src.core.config import settingsAI
-from src.rag.services import RAGService, DocumentService, AIService
+from src.rag.services import RAGService, DocumentService, AIService, CollectionService
 from src.rag.repositories import QdrantRepository, ElasticRepository
 from src.rag.repositories.context_enricher import ContextEnricher
 from src.rag.retrievers import VectorRetriever, BM25Retriever, HybridRetriever
-from src.core.ai_config import AIServiceConfig
 from src.api.deps import RAGDep, DocumentDep
-from src.api.routes import router_vector_repo, router_keyword_repo
+from src.api.routes import router_vector_repo, router_keyword_repo, router_admin_repo
 from src.api.schemas import QuerySchema
 
 
@@ -36,6 +35,7 @@ async def lifespan(app: FastAPI):
     #     app.state.keyword_repo,
     #     model="sentence-transformers/all-MiniLM-L6-v2",
     # )
+    app.state.collection_service = CollectionService(app.state.repo, app.state.keyword_repo)
     app.state.rag_service = RAGService(ai_service, hybrid_retriever, enricher)
     logger.info("Приложение запущено!")
 
@@ -282,8 +282,9 @@ async def rag_query(query_data: QuerySchema, rag_service: RAGDep):
     return answer
 
 
-app.include_router(router_vector_repo)
-app.include_router(router_keyword_repo)
+app.include_router(router_vector_repo, prefix="/api/v1")
+app.include_router(router_keyword_repo, prefix="/api/v1")
+app.include_router(router_admin_repo, prefix="/api/v1")
 
 
 if __name__ == "__main__":

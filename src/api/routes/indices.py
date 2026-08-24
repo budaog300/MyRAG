@@ -4,7 +4,7 @@ from typing import List
 from src.api.deps import KeywordRepoDep
 from src.api.schemas import AddIndexSchema, IndexSchema
 
-router = APIRouter(prefix="/api/v1/indices", tags=["Keyword Repository"])
+router = APIRouter(prefix="/keyword/indices", tags=["Keyword Repository"])
 
 
 @router.post("/", summary="Создать индекс")

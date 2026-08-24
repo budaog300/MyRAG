@@ -23,6 +23,9 @@ class BaseKeywordRepository(ABC):
     async def clear_index(self, index: str): ...
 
     @abstractmethod
+    async def delete_by_filter(self, index: str, key: str, value: Any) -> None: ...
+
+    @abstractmethod
     async def index_documents(self, index: str, items: List[Dict[str, Any]]): ...
 
     @abstractmethod

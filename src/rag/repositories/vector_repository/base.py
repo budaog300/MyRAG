@@ -25,6 +25,9 @@ class BaseVectorRepository(ABC):
     async def delete_collection(self, collection_name: str): ...
 
     @abstractmethod
+    async def delete_by_filter(self, collection_name: str, key: str, value: Any) -> None: ...
+
+    @abstractmethod
     async def upsert(
         self,
         collection_name: str,

@@ -60,6 +60,21 @@ class QdrantRepository(BaseVectorRepository):
         if await self.client.collection_exists(parents_collection_name):
             await self.client.delete_collection(collection_name=parents_collection_name)
 
+    async def delete_by_filter(self, collection_name: str, key: str, value: Any) -> None:
+        await self.client.delete(
+            collection_name=collection_name,
+            points_selector=models.FilterSelector(
+                filter=models.Filter(
+                    must=[
+                        models.FieldCondition(
+                            key=key,
+                            match=models.MatchValue(value=value)
+                        )
+                    ]
+                )
+            )
+        )
+
     async def upsert(
         self,
         collection_name: str,

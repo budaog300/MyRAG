@@ -25,8 +25,8 @@ class ElasticRepository(BaseKeywordRepository):
             }
         }
         await self.client.indices.create(index=index, mappings=mappings)
-        parents_index = f"{index}_parents"
-        await self.client.indices.create(index=parents_index, mappings=mappings)
+        # parents_index = f"{index}_parents"
+        # await self.client.indices.create(index=parents_index, mappings=mappings)
 
     async def get_indices(self, include_parents: bool = False) -> List[IndexSchema]:
         indices = await self.client.cat.indices(format="json")
@@ -49,6 +49,24 @@ class ElasticRepository(BaseKeywordRepository):
         if await self.client.indices.exists(index=parents_index):
             await self.client.delete_by_query(index=parents_index, query={"match_all": {}})
 
+    async def delete_by_filter(self, index_name: str, field: str, value: Any) -> None:
+        field_name = field if field.endswith(".keyword") or not isinstance(value, str) else f"{field}.keyword"
+
+        query = {
+            "query": {
+                "term": {
+                    field_name: value
+                }
+            }
+        }
+
+        await self.client.delete_by_query(
+            index=index_name,
+            body=query,
+            conflicts="proceed",
+            refresh=True
+        )
+
     async def index_documents(self, index: str, items: List[Dict[str, Any]]):
         actions = [
             {
@@ -63,8 +81,6 @@ class ElasticRepository(BaseKeywordRepository):
             for item in items
         ]
         success, failed = await helpers.async_bulk(self.client, actions)
-        print("SUCCESS:", success)
-        print("FAILED:", failed)
         await self.client.indices.refresh(index=index)
 
     async def search(

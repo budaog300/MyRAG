@@ -2,7 +2,7 @@ from fastapi import Request, Depends
 from typing import Annotated
 
 from src.rag.repositories import BaseVectorRepository, BaseKeywordRepository
-from src.rag.services import RAGService, DocumentService
+from src.rag.services import RAGService, DocumentService, CollectionService
 
 
 async def get_repo(request: Request) -> BaseVectorRepository:
@@ -21,7 +21,12 @@ async def get_document_service(request: Request) -> DocumentService:
     return request.app.state.document_service
 
 
+async def get_collection_service(request: Request) -> CollectionService:
+    return request.app.state.collection_service
+
+
 RepoDep = Annotated[BaseVectorRepository, Depends(get_repo)]
 KeywordRepoDep = Annotated[BaseKeywordRepository, Depends(get_keyword_repo)]
 RAGDep = Annotated[RAGService, Depends(get_rag_service)]
 DocumentDep = Annotated[DocumentService, Depends(get_document_service)]
+CollectionDep = Annotated[CollectionService, Depends(get_collection_service)]
