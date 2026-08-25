@@ -8,6 +8,7 @@ from src.rag.services.convert_service import DocumentConverterService
 from src.rag.schemas.document import RawDocumentSchema, RAGDocument
 from src.rag.repositories import BaseVectorRepository
 from src.rag.repositories import BaseKeywordRepository
+from src.core.exceptions import BaseAppException
 from src.core.exceptions.document_service_exceptions import (    
     DocumentIngestionError,
     EmptyDocumentListError    
@@ -100,6 +101,8 @@ class DocumentService:
             logger.info(
                 f"Успешно сохранены чанки в коллекцию '{collection_name}' (Children: {len(all_children)}, Parents: {len(all_parents)})"
             )
+        except BaseAppException:
+            raise
         except Exception as exc:
             logger.error(f"Ошибка при сохранении чанков в базы данных для коллекции '{collection_name}': {exc}")
             raise DocumentIngestionError(

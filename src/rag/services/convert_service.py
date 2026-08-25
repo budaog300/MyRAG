@@ -18,7 +18,7 @@ class DocumentConverterService:
     async def convert_to_markdown(self, source: str | Path) -> str:
         file_path = Path(source)
         if not file_path.exists():
-            logger.error(f"Файл для конвертации не найден: {file_path}")
+            logger.error(f"Файл для конвертации не найден по пути: {file_path}")
             raise DocumentFileNotFoundError(file_path=str(file_path))
 
         for converter in self.converters:

@@ -4,6 +4,7 @@ from typing import Optional, Dict, Any
 from src.rag.retrievers import BaseRetriever
 from src.rag.services.ai_service import AIService
 from src.rag.repositories.context_enricher import ContextEnricher
+from src.core.exceptions import BaseAppException
 from src.core.exceptions.rag_service_exceptions import (
     ContextEnrichmentError,
     EmptyQueryError,
@@ -17,8 +18,6 @@ logger = logging.getLogger(__name__)
 
 
 class RAGService:
-    """Сервис генерации ответов с использованием поиска по базе знаний (RAG)."""
-
     def __init__(
         self,
         ai_service: AIService,
@@ -46,8 +45,10 @@ class RAGService:
                 retrieve_limit=retrieve_limit,
                 merge_limit=merge_limit,
             )
+        except BaseAppException:
+            raise
         except Exception as exc:
-            logger.error(f"Ошибка при выполнении ретрива для коллекции '{collection_name}': exc")
+            logger.error(f"Ошибка при выполнении ретрива для коллекции '{collection_name}': {exc}", exc_info=True)
             raise RAGException(
                 message=f"Ошибка при поиске документов по коллекции '{collection_name}': {exc}"
             ) from exc
@@ -66,8 +67,10 @@ class RAGService:
                     top_n=top_n,
                 )
                 logger.debug(f"Получено документов после реранкинга: {len(docs)}")
+            except BaseAppException:
+                raise
             except Exception as exc:
-                logger.error(f"Ошибка при реранкинге документов: {exc}")
+                logger.error(f"Ошибка при реранкинге документов: {exc}", exc_info=True)
                 if not docs:
                     raise RAGException(message=f"Сбой реранкинга: {exc}") from exc
 
@@ -79,15 +82,17 @@ class RAGService:
             try:
                 docs = await self.enricher.enrich(docs, collection_name)
                 logger.debug(f"Получено документов после обогащения контекста: {len(docs)}")
+            except BaseAppException:
+                raise
             except Exception as exc:
-                logger.error(f"Ошибка при обогащении контекста: {exc}")
+                logger.error(f"Ошибка при обогащении контекста: {exc}", exc_info=True)
                 raise ContextEnrichmentError(details=str(exc)) from exc
 
         context_text = "\n\n---\n\n".join([doc.content for doc in docs[:top_n]])
 
         prompt = (
             f"Используй следующий контекст для ответа на вопрос.\n\n"
-            f"КОНТЕКСТ:\n{context_text if context_text else "Нет информации"}\n\n"
+            f"КОНТЕКСТ:\n{context_text if context_text else 'Нет информации'}\n\n"
             f"ВОПРОС: {query}"
         )
 
@@ -99,10 +104,10 @@ class RAGService:
                 system_prompt=system_prompt,
                 **kwargs,
             )
-        except AIServiceInitializationError:
+        except BaseAppException:
             raise
         except Exception as exc:
-            logger.error(f"Ошибка генерации ответа через LLM: {exc}")
+            logger.error(f"Ошибка генерации ответа через LLM: {exc}", exc_info=True)
             raise RAGException(message=f"Ошибка при генерации ответа LLM: {exc}") from exc
 
         return answer or None

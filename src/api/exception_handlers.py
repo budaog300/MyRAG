@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 async def base_app_exception_handler(request: Request, exc: BaseAppException) -> JSONResponse:
+    logger.error("Domain Exception [%s]: %s", exc.__class__.__name__, exc.message, exc_info=True)
     response_content = {"detail": exc.message}
     if exc.extra:
         response_content["extra"] = exc.extra

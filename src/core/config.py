@@ -1,9 +1,10 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from src.core.ai_config import AIServiceConfig, ModelConfig, EngineMode
 
 
 class SettingsQdrant(BaseSettings):
-    QDRANT_URL: str
+    QDRANT_URL: str = Field(default="http://localhost:6333")
     QDRANT_API_KEY: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env.qdrant")
@@ -17,7 +18,7 @@ class SettingsQdrant(BaseSettings):
 
 
 class SettingsElastic(BaseSettings):
-    ELASTIC_URL: str
+    ELASTIC_URL: str = Field(default="http://localhost:9200")
     ELASTIC_API_KEY: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env.elastic")
@@ -95,6 +96,36 @@ class SettingsAI(BaseSettings):
         )
 
 
+class SettingsRabbitMQ(BaseSettings):    
+    RABBITMQ_HOST: str = Field(default="localhost")
+    RABBITMQ_PORT: int = Field(default="5672")
+    RABBITMQ_USER: str = Field(default="guest")
+    RABBITMQ_PASSWORD: str = Field(default="guest")
+    RABBITMQ_VHOST: str = Field(default="/")
+
+    documents_exchange: str = Field(default="documents_exchange")
+    documents_queue: str = Field(default="documents_queue")
+    documents_routing_key: str = Field(default="documents.ingest")
+
+    model_config = SettingsConfigDict(env_file=".env.rabbitmq", extra="ignore")
+    
+    @property
+    def get_auth_data(self) -> str:
+        return f"amqp://{self.RABBITMQ_USER}:{self.RABBITMQ_PASSWORD}@{self.RABBITMQ_HOST}:{self.RABBITMQ_PORT}/{self.RABBITMQ_VHOST.lstrip('/')}"
+
+
+class SettingsMinIO(BaseSettings):
+    ENDPOINT_URL: str = Field(default="http://localhost:9000")
+    ACCESS_KEY: str = Field(default="admin")
+    SECRET_KEY: str = Field(default="admin")
+    BUCKET_NAME: str = Field(default="documents")
+    REGION: str = Field(default="us-east-1")
+
+    model_config = SettingsConfigDict(env_file=".env.minio", extra="ignore")
+    
+
 settingsAI = SettingsAI()
 settingsQdrant = SettingsQdrant()
 settingsElastic = SettingsElastic()
+settingsRabbitMQ = SettingsRabbitMQ()
+settingsMinIO = SettingsMinIO()

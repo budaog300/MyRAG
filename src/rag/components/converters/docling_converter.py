@@ -193,7 +193,7 @@ class DoclingDocumentConverter(BaseDocumentConverter):
             logger.info(f"Файл {file_path.name} успешно конвертирован за {elapsed:.2f} c")
             return markdown
 
-        except (DocumentConversionError, BaseAppException):
+        except BaseAppException:
             raise
         except Exception as exc:
             exc_str = str(exc).lower()

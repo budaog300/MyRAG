@@ -13,12 +13,6 @@ class RAGDocument(BaseModel):
     is_parent: bool = False
 
 
-class IngestDataSchema(BaseModel):
-    collection_name: str
-    chunk_size: int = 1000
-    chunk_overlap: int = 300
-
-
 class RawDocumentSchema(BaseModel):
     source: str
     content: Optional[str] = None

@@ -3,6 +3,7 @@ import asyncio
 from typing import List, Dict, Any, Optional
 from src.rag.repositories import BaseKeywordRepository, BaseVectorRepository
 from src.rag.schemas.document import CollectionSchema
+from src.core.exceptions import BaseAppException
 from src.core.exceptions.repo_exceptions import (
     CollectionAlreadyExistsError,
     CollectionNotFoundError,
@@ -40,7 +41,7 @@ class CollectionService:
                 self.vector_repo.create_collection(collection_name=name, size=size, distance=distance),
                 self.keyword_repo.create_index(index=name),
             )
-        except CollectionAlreadyExistsError:
+        except BaseAppException:
             raise
         except Exception as exc:
             logger.error(f"Ошибка при создании коллекции '{name}': {exc}")
@@ -49,6 +50,8 @@ class CollectionService:
     async def get_collections(self, include_parents: bool = False) -> List[CollectionSchema]:
         try:
             return await self.vector_repo.get_collections(include_parents=include_parents)
+        except BaseAppException:
+            raise
         except Exception as exc:
             logger.error(f"Ошибка при получении списка коллекций: {exc}")
             raise CollectionOperationError(
@@ -70,7 +73,7 @@ class CollectionService:
                 "vector_repo_info": vector_repo_info,
                 "keyword_repo_info": keyword_repo_info,
             }
-        except CollectionNotFoundError:
+        except BaseAppException:
             raise
         except Exception as exc:
             logger.error(f"Ошибка при получении деталей коллекции '{name}': {exc}")
@@ -80,29 +83,29 @@ class CollectionService:
                 details=str(exc),
             ) from exc
 
-    async def delete_document_by_file_id(self, collection_name: str, file_id: str) -> None:
-        self._validate_collection_name(collection_name)
+    async def delete_document_by_file_id(self, name: str, file_id: str) -> None:
+        self._validate_collection_name(name)
         if not file_id or not file_id.strip():
             raise CollectionOperationError(
                 operation="delete_document",
-                collection_name=collection_name,
+                collection_name=name,
                 details="file_id не может быть пустым.",
             )
 
-        logger.info(f"Удаление документов с file_id='{file_id}' из коллекции '{collection_name}'")
+        logger.info(f"Удаление документов с file_id='{file_id}' из коллекции '{name}'")
         try:
             await asyncio.gather(
-                self.vector_repo.delete_by_filter(collection_name, key="metadata.file_id", value=file_id),
-                self.vector_repo.delete_by_filter(f"{collection_name}_parents", key="metadata.file_id", value=file_id),
-                self.keyword_repo.delete_by_filter(collection_name, field="metadata.file_id", value=file_id),
+                self.vector_repo.delete_by_filter(name, key="metadata.file_id", value=file_id),
+                self.vector_repo.delete_by_filter(f"{name}_parents", key="metadata.file_id", value=file_id),
+                self.keyword_repo.delete_by_filter(name, field="metadata.file_id", value=file_id),
             )
-        except (CollectionNotFoundError, DocumentNotFoundError):
+        except BaseAppException:
             raise
         except Exception as exc:
-            logger.error(f"Ошибка при удалении файлов file_id='{file_id}' из коллекции '{collection_name}': {exc}")
+            logger.error(f"Ошибка при удалении файлов file_id='{file_id}' из коллекции '{name}': {exc}")
             raise CollectionOperationError(
                 operation="delete_document",
-                collection_name=collection_name,
+                collection_name=name,
                 details=str(exc),
             ) from exc
 
@@ -116,7 +119,7 @@ class CollectionService:
                 self.vector_repo.clear_collection(f"{name}_parents"),
                 self.keyword_repo.clear_index(name),
             )
-        except CollectionNotFoundError:
+        except BaseAppException:
             raise
         except Exception as exc:
             logger.error(f"Ошибка при очистке коллекции '{name}': {exc}")
@@ -132,7 +135,7 @@ class CollectionService:
                 self.vector_repo.delete_collection(f"{name}_parents"),
                 self.keyword_repo.delete_index(name),
             )
-        except CollectionNotFoundError:
+        except BaseAppException:
             raise
         except Exception as exc:
             logger.error(f"Ошибка при удалении коллекции '{name}': {exc}")

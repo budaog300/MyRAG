@@ -33,8 +33,8 @@ class ContextEnricher:
                 ids=parent_ids,
             )
         except CollectionNotFoundError:
-            raise CollectionNotFoundError(parents_collection_name)
-        except VectorDatabaseError as e:
+            raise
+        except VectorDatabaseError:
             raise
 
         parents_map = {p.id: p for p in parents}

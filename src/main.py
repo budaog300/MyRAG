@@ -1,20 +1,21 @@
 import time
-from typing import List
-from fastapi import FastAPI, HTTPException, Request, Depends, UploadFile, File, Form
+from uuid import uuid4
+from fastapi import FastAPI, HTTPException, Request, UploadFile, File, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
 
-from src.api.exception_handlers import register_exception_handlers
 from src.core.logger import logger
-from src.core.config import settingsAI
-from src.rag.services import RAGService, DocumentService, AIService, CollectionService
+from src.core.config import settingsAI, settingsRabbitMQ
+from src.rag.services import RAGService, AIService, CollectionService
 from src.rag.repositories import QdrantRepository, ElasticRepository
 from src.rag.repositories.context_enricher import ContextEnricher
 from src.rag.retrievers import VectorRetriever, BM25Retriever, HybridRetriever
-from src.api.deps import RAGDep, DocumentDep
+from src.api.exception_handlers import register_exception_handlers
+from src.api.deps import RAGDep, RabbitMQPublisherDep, S3ServiceDep
 from src.api.routes import router_vector_repo, router_keyword_repo, router_admin_repo
-from src.api.schemas import QuerySchema
+from src.api.schemas import QuerySchema, IngestDataSchema
+from src.broker.publisher import RabbitMQPublisher
 
 
 @asynccontextmanager
@@ -22,6 +23,15 @@ async def lifespan(app: FastAPI):
     logger.info("Запускаем приложение...")
     ai_config = settingsAI.build_ai_config()
     ai_service = AIService(ai_config)
+
+    publisher = RabbitMQPublisher(url=settingsRabbitMQ.get_auth_data)
+    await publisher.connect()
+    await publisher.setup_topology(
+        exchange_name=settingsRabbitMQ.documents_exchange,
+        queue_name=settingsRabbitMQ.documents_queue,
+        routing_key=settingsRabbitMQ.documents_routing_key,
+    )
+    app.state.publisher = publisher
     
     app.state.repo = QdrantRepository(embedder=ai_service.embedder)
     app.state.keyword_repo = ElasticRepository()
@@ -31,11 +41,6 @@ async def lifespan(app: FastAPI):
     keyword_retriever = BM25Retriever(app.state.keyword_repo)
     hybrid_retriever = HybridRetriever([vector_retriever, keyword_retriever])
 
-    # app.state.document_service = DocumentService(
-    #     app.state.repo,
-    #     app.state.keyword_repo,
-    #     model="sentence-transformers/all-MiniLM-L6-v2",
-    # )
     app.state.collection_service = CollectionService(app.state.repo, app.state.keyword_repo)
     app.state.rag_service = RAGService(ai_service, hybrid_retriever, enricher)
     logger.info("Приложение запущено!")
@@ -43,8 +48,9 @@ async def lifespan(app: FastAPI):
     yield
 
     logger.info("Останавливаем приложение...")
+    await app.state.publisher.close()
     await app.state.repo.close()
-    await app.state.keyword_repo.close()
+    await app.state.keyword_repo.close()    
     logger.info("Приложение остановлено!")
 
 
@@ -57,7 +63,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_credentials=True,
 )
+
 register_exception_handlers(app)
+
 app.include_router(router_vector_repo, prefix="/api/v1")
 app.include_router(router_keyword_repo, prefix="/api/v1")
 app.include_router(router_admin_repo, prefix="/api/v1")
@@ -259,24 +267,46 @@ async def health():
     return {"message": "success"}
 
 
-# @app.post("/ingest", summary="Загрузить документацию")
-# async def ingest(
-#     doc_service: DocumentDep,
-#     collection_name: str = Form(...),
-#     chunk_size: int = Form(1000),
-#     chunk_overlap: int = Form(300),
-#     documents: list[UploadFile] = File(..., description="Files"),
-# ):
-#     # document_data = IngestDataSchema(
-#     #     collection_name=collection_name,
-#     #     chunk_size=chunk_size,
-#     #     chunk_overlap=chunk_overlap,
-#     # )
+@app.post("/ingest", status_code=status.HTTP_202_ACCEPTED, summary="Загрузка документации (RAG). Загрузить файлы в MinIO и поставить задачи в очередь")
+async def ingest_documents_async(
+    broker: RabbitMQPublisherDep,
+    s3_service: S3ServiceDep,
+    files: list[UploadFile] = File(...)    
+):
+    queued_tasks = []
 
-#     print(documents)
-#     return await doc_service.ingest_files(
-#         collection_name, documents, chunk_size, chunk_overlap
-#     )
+    # Убеждаемся, что бакет существует
+    await s3_service.ensure_bucket_exists()
+
+    for file in files:
+        doc_id = uuid4()
+        file_extension = file.filename.split(".")[-1] if "." in file.filename else ""
+        s3_key = f"raw_documents/{doc_id}.{file_extension}"
+
+        # 1. Читаем файл и загружаем прямо в MinIO
+        file_content = await file.read()
+        await s3_service.upload_file(
+            file_data=file_content,
+            object_key=s3_key,
+            content_type=file.content_type or "application/octet-stream",
+        )
+
+        # 2. Формируем задачу для RabbitMQ с ссылкой на S3
+        task_data = IngestDataSchema(
+            document_id=doc_id,
+            s3_key=s3_key,
+            original_filename=file.filename,
+        )
+
+        # 3. Публикуем сообщение в брокер
+        await broker.publish(task_data)
+        queued_tasks.append(str(doc_id))
+
+    return {
+        "status": "queued",
+        "count": len(queued_tasks),
+        "document_ids": queued_tasks,
+    }
 
 
 @app.post("/search", summary="Запрос в документацию (RAG)")

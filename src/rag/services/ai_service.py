@@ -40,6 +40,8 @@ class AIService:
             provider = LLMProvider(config)
             logger.info("LLM провайдер успешно инициализирован в режиме %s", config.mode)
             return provider
+        except AIProviderError:
+            raise
         except Exception as exc:
             logger.error("Ошибка инициализации LLM провайдера: %s", exc)
             raise AIServiceInitializationError(service_name="LLM", details=str(exc)) from exc
@@ -51,6 +53,8 @@ class AIService:
             provider = EmbedderProvider(config)
             logger.info("Embedder провайдер успешно инициализирован в режиме %s", config.mode)
             return provider
+        except AIProviderError:
+            raise
         except Exception as exc:
             logger.error("Ошибка инициализации Embedder провайдера: %s", exc)
             raise AIServiceInitializationError(service_name="Embedder", details=str(exc)) from exc
@@ -62,6 +66,8 @@ class AIService:
             provider = VLMProvider(config)
             logger.info("VLM провайдер успешно инициализирован в режиме %s", config.mode)
             return provider
+        except AIProviderError:
+            raise
         except Exception as exc:
             logger.error("Ошибка инициализации VLM провайдера: %s", exc)
             raise AIServiceInitializationError(service_name="VLM", details=str(exc)) from exc
@@ -73,6 +79,8 @@ class AIService:
             provider = RerankerProvider(config)
             logger.info("Reranker провайдер успешно инициализирован в режиме %s", config.mode)
             return provider
+        except AIProviderError:
+            raise
         except Exception as exc:
             logger.error("Ошибка инициализации Reranker провайдера: %s", exc)
             raise AIServiceInitializationError(service_name="Reranker", details=str(exc)) from exc
