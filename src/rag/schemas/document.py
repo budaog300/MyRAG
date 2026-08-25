@@ -1,4 +1,5 @@
 import hashlib
+from uuid import UUID
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 
@@ -17,15 +18,9 @@ class RawDocumentSchema(BaseModel):
     source: str
     content: Optional[str] = None
     file_bytes: Optional[bytes] = None
-    doc_id: str = Field(default="")
+    document_id: UUID
+    content_hash: str
     metadata: Dict[str, Any] = Field(default_factory=dict)
-
-    def model_post_init(self, __context: Any) -> None:
-        if not self.doc_id:
-            data_to_hash = self.source.encode("utf-8") + (
-                self.content.encode("utf-8") if self.content else (self.file_bytes or b"")
-            )
-            self.doc_id = hashlib.md5(data_to_hash).hexdigest()
 
 
 class CollectionSchema(BaseModel):

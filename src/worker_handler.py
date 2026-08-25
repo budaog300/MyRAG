@@ -18,7 +18,8 @@ async def process_document_task(
     raw_doc = RawDocumentSchema(
         source=task.original_filename,
         file_bytes=file_bytes,
-        doc_id=str(task.document_id),
+        document_id=task.document_id,
+        content_hash=task.content_hash,
         metadata={
             "s3_key": task.s3_key,
             "task_id": str(task.task_id),

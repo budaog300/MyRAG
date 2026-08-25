@@ -1,8 +1,6 @@
 import time
-from uuid import uuid4
-from fastapi import FastAPI, HTTPException, Request, UploadFile, File, status
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
 
 from src.core.logger import logger
@@ -12,9 +10,8 @@ from src.rag.repositories import QdrantRepository, ElasticRepository
 from src.rag.repositories.context_enricher import ContextEnricher
 from src.rag.retrievers import VectorRetriever, BM25Retriever, HybridRetriever
 from src.api.exception_handlers import register_exception_handlers
-from src.api.deps import RAGDep, RabbitMQPublisherDep, S3ServiceDep
-from src.api.routes import router_vector_repo, router_keyword_repo, router_admin_repo
-from src.api.schemas import QuerySchema, IngestDataSchema
+from src.api.deps import IngestionServiceDep
+from src.api.routes import router_vector_repo, router_keyword_repo, router_admin_repo, router_ingest
 from src.broker.publisher import RabbitMQPublisher
 
 
@@ -69,6 +66,7 @@ register_exception_handlers(app)
 app.include_router(router_vector_repo, prefix="/api/v1")
 app.include_router(router_keyword_repo, prefix="/api/v1")
 app.include_router(router_admin_repo, prefix="/api/v1")
+app.include_router(router_ingest, prefix="/api/v1")
 
 
 @app.middleware("http")
@@ -80,241 +78,9 @@ async def add_process_time_header(request: Request, call_next):
     return response
 
 
-@app.get("/")
-async def get_chat_ui() -> HTMLResponse:
-    return HTMLResponse(
-        """
-        <!DOCTYPE html>
-        <html lang="ru">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-            <title>RAG Search</title>
-
-            <style>
-                * {
-                    box-sizing: border-box;
-                }
-
-                body {
-                    margin: 0;
-                    min-height: 100vh;
-                    font-family: Arial, sans-serif;
-                    background: #f5f6f8;
-
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                }
-
-                .container {
-                    width: 100%;
-                    max-width: 700px;
-                    padding: 32px;
-                    background: white;
-                    border-radius: 16px;
-                    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-                }
-
-                h1 {
-                    margin: 0 0 8px;
-                    font-size: 24px;
-                }
-
-                .description {
-                    margin: 0 0 24px;
-                    color: #6b7280;
-                }
-
-                label {
-                    display: block;
-                    margin-bottom: 8px;
-                    font-weight: 600;
-                }
-
-                textarea {
-                    width: 100%;
-                    min-height: 110px;
-                    padding: 14px;
-                    border: 1px solid #d1d5db;
-                    border-radius: 10px;
-                    resize: vertical;
-                    font-size: 15px;
-                    font-family: inherit;
-                    outline: none;
-                }
-
-                textarea:focus {
-                    border-color: #2563eb;
-                }
-
-                button {
-                    width: 100%;
-                    margin-top: 12px;
-                    padding: 13px;
-                    border: none;
-                    border-radius: 10px;
-                    background: #2563eb;
-                    color: white;
-                    font-size: 15px;
-                    cursor: pointer;
-                }
-
-                button:hover {
-                    background: #1d4ed8;
-                }
-
-                button:disabled {
-                    background: #93c5fd;
-                    cursor: not-allowed;
-                }
-
-                .answer {
-                    margin-top: 24px;
-                }
-
-                #answer {
-                    min-height: 160px;
-                    padding: 16px;
-                    background: #f9fafb;
-                    border: 1px solid #e5e7eb;
-                    border-radius: 10px;
-                    line-height: 1.6;
-                    white-space: pre-wrap;
-                }
-            </style>
-        </head>
-
-        <body>
-
-            <div class="container">
-                <h1>RAG Search</h1>
-                <p class="description">
-                    Задайте вопрос по базе документов
-                </p>
-
-                <label for="query">Вопрос</label>
-
-                <textarea
-                    id="query"
-                    placeholder="Введите ваш вопрос..."
-                ></textarea>
-
-                <button id="send" onclick="search()">
-                    Найти ответ
-                </button>
-
-                <div class="answer">
-                    <label>Ответ</label>
-                    <div id="answer">
-                        Ответ появится здесь
-                    </div>
-                </div>
-            </div>
-
-            <script>
-                async function search() {
-                    const query = document.getElementById("query").value.trim();
-                    const answer = document.getElementById("answer");
-                    const button = document.getElementById("send");
-
-                    if (!query) {
-                        return;
-                    }
-
-                    button.disabled = true;
-                    button.textContent = "Поиск...";
-                    answer.textContent = "Ищу ответ...";
-
-                    try {
-                        const resp = await fetch("/search", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify({
-                                query: query,
-                                collection_name: "sber_docs"
-                            })
-                        });
-
-                        if (!resp.ok) {
-                            throw new Error("Server error");
-                        }
-
-                        const data = await resp.json();
-                        answer.textContent = data.answer;
-
-                    } catch (error) {
-                        answer.textContent =
-                            "Произошла ошибка при получении ответа.";
-                    } finally {
-                        button.disabled = false;
-                        button.textContent = "Найти ответ";
-                    }
-                }
-            </script>
-
-        </body>
-        </html>
-        """
-    )
-
-
 @app.get("/health", tags=["Проверка сервера"])
 async def health():
     return {"message": "success"}
-
-
-@app.post("/ingest", status_code=status.HTTP_202_ACCEPTED, summary="Загрузка документации (RAG). Загрузить файлы в MinIO и поставить задачи в очередь")
-async def ingest_documents_async(
-    broker: RabbitMQPublisherDep,
-    s3_service: S3ServiceDep,
-    files: list[UploadFile] = File(...)    
-):
-    queued_tasks = []
-
-    # Убеждаемся, что бакет существует
-    await s3_service.ensure_bucket_exists()
-
-    for file in files:
-        doc_id = uuid4()
-        file_extension = file.filename.split(".")[-1] if "." in file.filename else ""
-        s3_key = f"raw_documents/{doc_id}.{file_extension}"
-
-        # 1. Читаем файл и загружаем прямо в MinIO
-        file_content = await file.read()
-        await s3_service.upload_file(
-            file_data=file_content,
-            object_key=s3_key,
-            content_type=file.content_type or "application/octet-stream",
-        )
-
-        # 2. Формируем задачу для RabbitMQ с ссылкой на S3
-        task_data = IngestDataSchema(
-            document_id=doc_id,
-            s3_key=s3_key,
-            original_filename=file.filename,
-        )
-
-        # 3. Публикуем сообщение в брокер
-        await broker.publish(task_data)
-        queued_tasks.append(str(doc_id))
-
-    return {
-        "status": "queued",
-        "count": len(queued_tasks),
-        "document_ids": queued_tasks,
-    }
-
-
-@app.post("/search", summary="Запрос в документацию (RAG)")
-async def rag_query(query_data: QuerySchema, rag_service: RAGDep):
-    answer = await rag_service.run(query_data.query, query_data.collection_name, retrieve_limit=30)
-    if not answer:
-        raise HTTPException(status_code=500, detail="Ошибка ответа либо ответа нет")
-    return answer
 
 
 if __name__ == "__main__":

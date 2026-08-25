@@ -2,7 +2,7 @@ from fastapi import Request, Depends
 from typing import Annotated
 
 from src.rag.repositories import BaseVectorRepository, BaseKeywordRepository
-from src.rag.services import RAGService, DocumentService, CollectionService, S3Service
+from src.rag.services import RAGService, DocumentService, CollectionService, S3Service, DocumentIngestionService
 from src.broker.publisher import RabbitMQPublisher
 
 
@@ -41,3 +41,13 @@ DocumentDep = Annotated[DocumentService, Depends(get_document_service)]
 CollectionDep = Annotated[CollectionService, Depends(get_collection_service)]
 RabbitMQPublisherDep = Annotated[RabbitMQPublisher, Depends(get_rabbitmq_publisher)]
 S3ServiceDep = Annotated[S3Service, Depends(get_s3_service)]
+
+
+def get_ingestion_service(
+    s3_service: S3ServiceDep,
+    broker: RabbitMQPublisherDep,
+) -> DocumentIngestionService:
+    return DocumentIngestionService(s3_service=s3_service, broker=broker)
+
+
+IngestionServiceDep = Annotated[DocumentIngestionService, Depends(get_ingestion_service)]

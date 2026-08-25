@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List, Union
 
 from src.rag.retrievers import BaseRetriever
 from src.rag.services.ai_service import AIService
@@ -36,8 +36,9 @@ class RAGService:
         merge_limit: int = 20,
         top_n: int = 5,
         system_prompt: Optional[str] = None,
+        only_context: bool = True,
         **kwargs,
-    ) -> Optional[str]:
+    ) -> Union[str | List[Any]]:
         try:
             docs = await self.retriever.retrieve(
                 query,
@@ -53,7 +54,7 @@ class RAGService:
                 message=f"Ошибка при поиске документов по коллекции '{collection_name}': {exc}"
             ) from exc
 
-        logger.debug(f"Получено документов после ретрива: {len(docs)}")
+        logger.info(f"Получено документов после ретрива: {len(docs)}")
 
         if not docs:
             logger.warning(f"Ретривер не вернул документов по запросу: '{query}'")
@@ -66,7 +67,7 @@ class RAGService:
                     documents=docs,
                     top_n=top_n,
                 )
-                logger.debug(f"Получено документов после реранкинга: {len(docs)}")
+                logger.info(f"Получено документов после реранкинга: {len(docs)}")
             except BaseAppException:
                 raise
             except Exception as exc:
@@ -81,12 +82,17 @@ class RAGService:
         if self.enricher:
             try:
                 docs = await self.enricher.enrich(docs, collection_name)
-                logger.debug(f"Получено документов после обогащения контекста: {len(docs)}")
+                logger.info(f"Получено документов после обогащения контекста: {len(docs)}")
             except BaseAppException:
                 raise
             except Exception as exc:
                 logger.error(f"Ошибка при обогащении контекста: {exc}", exc_info=True)
                 raise ContextEnrichmentError(details=str(exc)) from exc
+
+        final_docs = docs[:top_n]
+        if only_context:
+            logger.info(f"Возврат найденных чанков без вызова LLM (only_context={only_context})")
+            return final_docs
 
         context_text = "\n\n---\n\n".join([doc.content for doc in docs[:top_n]])
 
@@ -121,6 +127,7 @@ class RAGService:
         top_n: int = 5,
         temperature: float = 0.3,
         max_tokens: int = 1024,
+        only_context: bool = True,
     ) -> Dict[str, Any]:
         if not query or not query.strip():
             raise EmptyQueryError()
@@ -130,7 +137,7 @@ class RAGService:
 
         logger.info(f"Запуск RAG пайплайна для коллекции '{collection_name}'")
 
-        answer = await self._full_step(
+        result = await self._full_step(
             query=query.strip(),
             collection_name=collection_name.strip(),
             retrieve_limit=retrieve_limit,
@@ -138,6 +145,10 @@ class RAGService:
             top_n=top_n,
             temperature=temperature,
             max_tokens=max_tokens,
+            only_context=only_context,
         )
 
-        return {"answer": answer}
+        if only_context:
+            return {"documents": result, "count": len(result) if result else 0}
+
+        return {"answer": result}

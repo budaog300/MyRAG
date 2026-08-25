@@ -1,5 +1,6 @@
 import logging
 import uuid
+import hashlib
 from typing import List
 from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 
@@ -19,13 +20,42 @@ class HierarchicalMarkdownSplitter(BaseDocumentSplitter):
     def __init__(
         self,
         parent_chunk_size: int = 3000,
+        parent_chunk_overlap: int = 100,
         chunk_size: int = 400,
         chunk_overlap: int = 50,
         headers_to_split_on: list[tuple[str, str]] | None = None,
         delimiter: str = DOCUMENT_DELIMITER,
     ):
+        self._validate_config(
+            chunk_size, chunk_overlap, parent_chunk_size, parent_chunk_overlap
+        )
+        
+        self.headers_to_split_on = headers_to_split_on or [
+            ("#", "Header_1"),
+            ("##", "Header_2"),
+            ("###", "Header_3"),
+            ("####", "Header_4"),
+        ]
+        self.parent_chunk_size = parent_chunk_size
+        self.parent_chunk_overlap = parent_chunk_overlap
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+        self.headers_to_split_on = headers_to_split_on
+        self.delimiter = delimiter
+
+    @staticmethod
+    def _validate_config(
+        chunk_size: int,
+        chunk_overlap: int,
+        parent_chunk_size: int,
+        parent_chunk_overlap: int,
+    ) -> None:
+        """Централизованная проверка корректности всех размеров чанков."""
         if chunk_size <= 0 or parent_chunk_size <= 0:
-            raise InvalidSplitterConfigError("Размер чанка должен быть больше 0.")
+            raise InvalidSplitterConfigError("Размер чанков должен быть больше 0.")
+
+        if chunk_overlap < 0 or parent_chunk_overlap < 0:
+            raise InvalidSplitterConfigError("Перекрытие (overlap) не может быть отрицательным.")
 
         if chunk_size >= parent_chunk_size:
             raise InvalidSplitterConfigError(
@@ -34,26 +64,36 @@ class HierarchicalMarkdownSplitter(BaseDocumentSplitter):
 
         if chunk_overlap >= chunk_size:
             raise InvalidSplitterConfigError(
-                f"chunk_overlap ({chunk_overlap}) должен быть меньше chunk_size ({chunk_size})."
+                f"chunk_overlap ({chunk_overlap}) должен быть строго меньше chunk_size ({chunk_size})."
             )
-        
-        self.headers_to_split_on = headers_to_split_on or [
-            ("#", "Header_1"),
-            ("##", "Header_2"),
-            ("###", "Header_3"),
-            ("####", "Header_4"),
-        ]
-        self.delimiter = delimiter
-        self.parent_chunk_size = parent_chunk_size
-        self.chunk_size = chunk_size
-        self.chunk_overlap = chunk_overlap
+
+        if parent_chunk_overlap >= parent_chunk_size:
+            raise InvalidSplitterConfigError(
+                f"parent_chunk_overlap ({parent_chunk_overlap}) должен быть строго меньше parent_chunk_size ({parent_chunk_size})."
+            )
 
     def split(
         self, 
         doc: RawDocumentSchema, 
         markdown_text: str,
+        chunk_size: int | None = None, 
+        chunk_overlap: int | None = None,
+        parent_chunk_size: int | None = None,
+        parent_chunk_overlap: int | None = None,
         **kwargs
     ) -> List[RAGDocument]:
+        actual_chunk_size = chunk_size or self.chunk_size
+        actual_chunk_overlap = chunk_overlap or self.chunk_overlap
+        actual_parent_chunk_size = parent_chunk_size or self.parent_chunk_size
+        actual_parent_chunk_overlap = parent_chunk_overlap or self.parent_chunk_overlap
+
+        self._validate_config(
+            actual_chunk_size, 
+            actual_chunk_overlap, 
+            actual_parent_chunk_size, 
+            actual_parent_chunk_overlap
+        )
+
         if not markdown_text or not markdown_text.strip():
             logger.warning("Попытка нарезки пустого текста для doc_id: %s", getattr(doc, "doc_id", "unknown"))
             raise EmptyTextToSplitError(doc_id=str(getattr(doc, "doc_id", "unknown")))
@@ -65,14 +105,14 @@ class HierarchicalMarkdownSplitter(BaseDocumentSplitter):
             )
 
             parent_text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=self.parent_chunk_size,
-                chunk_overlap=200,
+                chunk_size=actual_parent_chunk_size,
+                chunk_overlap=actual_parent_chunk_overlap,
                 separators=["\n\n\n", "\n\n", "\n", " ", ""],
             )
 
             child_text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=self.chunk_size,
-                chunk_overlap=self.chunk_overlap,
+                chunk_size=actual_chunk_size,
+                chunk_overlap=actual_chunk_overlap,
                 separators=["\n\n", "\n", " ", ""],
             )
         except Exception as exc:
@@ -101,11 +141,11 @@ class HierarchicalMarkdownSplitter(BaseDocumentSplitter):
                         parent_enriched_content = context_prefix + parent_raw_text
                         parent_chunk_id = str(uuid.uuid5(
                             uuid.NAMESPACE_DNS, 
-                            f"{doc.doc_id}:{section_idx}:{parent_index}:{parent_raw_text}"
+                            f"{doc.document_id}:{section_idx}:{parent_index}:{parent_raw_text}"
                         ))
                         parent_metadata = {
                             "chunk_id": parent_chunk_id,
-                            "doc_id": doc.doc_id,                        
+                            "document_id": doc.document_id,                        
                             "chunk_index": parent_index,
                             "breadcrumbs": breadcrumbs,
                             **doc.metadata
@@ -126,15 +166,17 @@ class HierarchicalMarkdownSplitter(BaseDocumentSplitter):
                         for child_index, child_raw_text in enumerate(raw_children):
                             child_chunk_id = str(uuid.uuid5(
                                 uuid.NAMESPACE_DNS, 
-                                f"{doc.doc_id}:{section_idx}:{child_index}:{child_raw_text}"
+                                f"{doc.document_id}:{section_idx}:{child_index}:{child_raw_text}"
                             ))
-                            
+                            chunk_hash = hashlib.sha256(child_raw_text.encode("utf-8")).hexdigest()
+
                             child_enriched_content = context_prefix + child_raw_text
 
                             child_metadata = {
                                 "chunk_id": child_chunk_id,
+                                "chunk_hash": chunk_hash,
                                 "parent_id": parent_chunk_id,
-                                "doc_id": doc.doc_id,
+                                "document_id": doc.document_id,
                                 "chunk_index": child_index,
                                 "breadcrumbs": breadcrumbs,                            
                                 **doc.metadata,
@@ -150,12 +192,12 @@ class HierarchicalMarkdownSplitter(BaseDocumentSplitter):
                             final_chunks.append(child_doc)
 
         except Exception as exc:
-            logger.error(f"Сбой во время разбиения документа '{doc.doc_id}': {exc}")
+            logger.error(f"Сбой во время разбиения документа '{doc.document_id}': {exc}")
             raise TextSplittingError(
-                message=f"Ошибка при иерархическом разбиении документа '{doc.doc_id}': {exc}"
+                message=f"Ошибка при иерархическом разбиении документа '{doc.document_id}': {exc}"
             ) from exc
 
         if not final_chunks:
-            logger.warning(f"В результате разбиения документа {doc.doc_id} не создано ни одного чанка")
+            logger.warning(f"В результате разбиения документа {doc.document_id} не создано ни одного чанка")
             
         return final_chunks

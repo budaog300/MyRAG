@@ -14,6 +14,7 @@ from src.core.exceptions.repo_exceptions import (
     EmbedderError,
     VectorDatabaseError,
 )
+from src.core.exceptions.provider_exceptions import AIProviderError
 
 auth_data = settingsQdrant.get_auth_data
 
@@ -138,6 +139,8 @@ class QdrantRepository(BaseVectorRepository):
         
         try:
             embeddings = await self.embedder.embed_documents(texts)
+        except AIProviderError:
+            raise
         except Exception as e:
             raise EmbedderError(str(e))
 
@@ -172,6 +175,8 @@ class QdrantRepository(BaseVectorRepository):
     ) -> List[RAGDocument]:
         try:
             query_vector = await self.embedder.embed_query(query)
+        except AIProviderError:
+            raise
         except Exception as e:
             raise EmbedderError(str(e))
 
