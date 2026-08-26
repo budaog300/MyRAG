@@ -1,14 +1,13 @@
 import logging
 import asyncio
+from uuid import UUID
 from typing import List, Dict, Any, Optional
+from src.rag.services import S3Service
 from src.rag.repositories import BaseKeywordRepository, BaseVectorRepository
-from src.rag.schemas.document import CollectionSchema
+from src.rag.schemas.document import CollectionSchema, RAGDocument
 from src.core.exceptions import BaseAppException
 from src.core.exceptions.repo_exceptions import (
-    CollectionAlreadyExistsError,
-    CollectionNotFoundError,
     CollectionOperationError,
-    DocumentNotFoundError,
     InvalidCollectionNameError,
 )
 
@@ -16,9 +15,10 @@ logger = logging.getLogger(__name__)
 
 
 class CollectionService:
-    def __init__(self, vector_repo: BaseVectorRepository, keyword_repo: BaseKeywordRepository):
-        self.vector_repo = vector_repo
-        self.keyword_repo = keyword_repo
+    def __init__(self, vector_repo: BaseVectorRepository, keyword_repo: BaseKeywordRepository, s3_service: S3Service):
+        self.vector_repo = vector_repo,
+        self.keyword_repo = keyword_repo,
+        self.s3_service = s3_service
 
     def _validate_collection_name(self, name: str) -> None:
         """Проверяет валидность названия коллекции."""
@@ -83,42 +83,25 @@ class CollectionService:
                 details=str(exc),
             ) from exc
 
-    async def delete_document_by_file_id(self, name: str, file_id: str) -> None:
-        self._validate_collection_name(name)
-        if not file_id or not file_id.strip():
-            raise CollectionOperationError(
-                operation="delete_document",
-                collection_name=name,
-                details="file_id не может быть пустым.",
-            )
-
-        logger.info(f"Удаление документов с file_id='{file_id}' из коллекции '{name}'")
-        try:
-            await asyncio.gather(
-                self.vector_repo.delete_by_filter(name, key="metadata.file_id", value=file_id),
-                self.vector_repo.delete_by_filter(f"{name}_parents", key="metadata.file_id", value=file_id),
-                self.keyword_repo.delete_by_filter(name, field="metadata.file_id", value=file_id),
-            )
-        except BaseAppException:
-            raise
-        except Exception as exc:
-            logger.error(f"Ошибка при удалении файлов file_id='{file_id}' из коллекции '{name}': {exc}")
-            raise CollectionOperationError(
-                operation="delete_document",
-                collection_name=name,
-                details=str(exc),
-            ) from exc
-
     async def clear_collection(self, name: str) -> None:
         self._validate_collection_name(name)
 
         logger.info(f"Очистка содержимого коллекции '{name}'")
         try:
+            s3_keys = await self.vector_repo.get_s3_keys(
+                collection_name=name,
+            )
             await asyncio.gather(
                 self.vector_repo.clear_collection(name),
-                self.vector_repo.clear_collection(f"{name}_parents"),
                 self.keyword_repo.clear_index(name),
             )
+            await asyncio.gather(
+                *[
+                    self.s3_service.delete_file(s3_key)
+                    for s3_key in s3_keys
+                ]
+            )
+            logger.info(f"Коллекция '{name}' очищена. Удалено S3 файлов: {len(s3_keys)}")
         except BaseAppException:
             raise
         except Exception as exc:
@@ -130,13 +113,98 @@ class CollectionService:
 
         logger.info(f"Удаление коллекции '{name}")
         try:
+            s3_keys = await self.vector_repo.get_s3_keys(
+                collection_name=name,
+            )
             await asyncio.gather(
                 self.vector_repo.delete_collection(name),
-                self.vector_repo.delete_collection(f"{name}_parents"),
                 self.keyword_repo.delete_index(name),
             )
+            await asyncio.gather(
+                *[
+                    self.s3_service.delete_file(s3_key)
+                    for s3_key in s3_keys
+                ]
+            )
+            logger.info(f"Коллекция '{name}' удалена. Удалено S3 файлов: {len(s3_keys)}")
         except BaseAppException:
             raise
         except Exception as exc:
             logger.error(f"Ошибка при удалении коллекции '{name}': {exc}")
             raise CollectionOperationError(operation="delete", collection_name=name, details=str(exc)) from exc
+
+    async def delete_document(
+        self, name: str, document_id: UUID,
+    ) -> None:
+        self._validate_collection_name(name)
+        if document_id is None:
+            raise CollectionOperationError(
+                operation="delete_document",
+                collection_name=name,
+                details="document_id не может быть пустым.",
+            )
+
+        logger.info(f"Удаление документов с document_id='{document_id}' из коллекции '{name}'")
+
+        try:
+            s3_keys = await self.vector_repo.get_s3_keys_by_document_id(
+                collection_name=name,
+                document_id=document_id,
+            )
+
+            await asyncio.gather(
+                self.vector_repo.delete_by_filter(name, key="metadata.document_id", value=str(document_id)),
+                self.keyword_repo.delete_by_filter(name, field="metadata.document_id", value=str(document_id)),
+            )
+            await asyncio.gather(
+                *[
+                    self.s3_service.delete_file(s3_key)
+                    for s3_key in s3_keys
+                ]
+            )
+
+            logger.info(f"Документ '{document_id}' успешно удален из коллекции '{name}'. Удалено S3 файлов: {len(s3_keys)}")
+
+        except BaseAppException:
+            raise
+        except Exception as exc:
+            logger.error("Ошибка удаления документа '%s' из коллекции '%s': %s", document_id, name, exc, exc_info=True)
+
+            raise CollectionOperationError(
+                operation="delete_document",
+                collection_name=name,
+                details=str(exc),
+            ) from exc
+
+    async def get_chunks(
+        self,
+        collection_name: str,
+        document_id: UUID | None = None,
+        limit: int = 100,
+        offset: str | None = None,
+    ) -> List[RAGDocument]:
+
+        self._validate_collection_name(collection_name)
+
+        if limit <= 0:
+            raise CollectionOperationError(
+                operation="get_chunks",
+                collection_name=collection_name,
+                details="limit должен быть больше 0",
+            )
+
+        try:
+            return await self.vector_repo.get_chunks(
+                collection_name=collection_name,
+                document_id=document_id,
+                limit=limit,
+                offset=offset
+            )
+
+        except BaseAppException:
+            raise
+
+        except Exception as exc:
+            logger.error("Ошибка получения chunks коллекции '%s': %s", collection_name, exc)
+
+            raise CollectionOperationError(operation="get_chunks", collection_name=collection_name, details=str(exc)) from exc

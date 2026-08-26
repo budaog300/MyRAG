@@ -1,9 +1,33 @@
-from fastapi import Request, Depends
+from fastapi import Request, Depends, Query
 from typing import Annotated
 
 from src.rag.repositories import BaseVectorRepository, BaseKeywordRepository
 from src.rag.services import RAGService, DocumentService, CollectionService, S3Service, DocumentIngestionService
 from src.broker.publisher import RabbitMQPublisher
+
+
+class QdrantPagination:
+    def __init__(
+        self,
+        limit: int = Query(default=5, ge=1, le=100),
+        offset: str | None = Query(default=None),
+    ):
+        self.limit = limit
+        self.offset = offset
+
+
+class Pagination:
+    def __init__(
+        self,
+        page: int = Query(default=1, ge=1),
+        size: int = Query(default=5, ge=1, le=100)
+    ):
+        self.page = page
+        self.size = size
+    
+    @property
+    def offset(self) -> int:
+        return (self.page - 1) * self.size
 
 
 async def get_repo(request: Request) -> BaseVectorRepository:
@@ -34,6 +58,8 @@ async def get_s3_service(request: Request) -> S3Service:
     return request.app.state.s3_service
 
 
+PaginationDep = Annotated[Pagination, Depends(Pagination)]
+QdrantPaginationDep = Annotated[QdrantPagination, Depends(QdrantPagination)]
 RepoDep = Annotated[BaseVectorRepository, Depends(get_repo)]
 KeywordRepoDep = Annotated[BaseKeywordRepository, Depends(get_keyword_repo)]
 RAGDep = Annotated[RAGService, Depends(get_rag_service)]

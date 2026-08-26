@@ -1,4 +1,5 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set, Tuple
+from uuid import UUID
 from abc import ABC, abstractmethod
 from src.rag.schemas.document import RAGDocument
 
@@ -53,6 +54,31 @@ class BaseVectorRepository(ABC):
         ids: List[str],
         **kwargs
     ) -> List[RAGDocument]: ...
+
+    @abstractmethod
+    async def get_chunks(
+        self,
+        collection_name: str,
+        document_id: UUID | None = None,
+        limit: int = 100,
+        offset: str | None = None,
+    ) -> Tuple[List[RAGDocument], str | None]:
+        ...
+
+    @abstractmethod
+    async def get_s3_keys_by_document_id(
+        self,
+        collection_name: str,
+        document_id: UUID,
+    ) -> Set[str]:
+        ...
+
+    @abstractmethod
+    async def get_s3_keys(
+        self,
+        collection_name: str,
+    ) -> Set[str]:
+        ...
 
     @abstractmethod
     async def close(self): ...

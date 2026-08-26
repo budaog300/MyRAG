@@ -116,7 +116,7 @@ class RAGService:
             logger.error(f"Ошибка генерации ответа через LLM: {exc}", exc_info=True)
             raise RAGException(message=f"Ошибка при генерации ответа LLM: {exc}") from exc
 
-        return answer or None
+        return answer
 
     async def run(
         self,
@@ -148,7 +148,9 @@ class RAGService:
             only_context=only_context,
         )
 
-        if only_context:
-            return {"documents": result, "count": len(result) if result else 0}
-
-        return {"answer": result}
+        return {
+            "answer": result if not only_context else None,
+            "documents": result if only_context else [],
+            "count": len(result) if only_context else 0,
+            "only_context": only_context
+        }

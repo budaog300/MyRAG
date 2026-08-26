@@ -66,9 +66,6 @@ class ElasticRepository(BaseKeywordRepository):
     async def delete_index(self, index: str):
         try:
             await self.client.indices.delete(index=index)
-            parents_index = f"{index}_parents"
-            if await self.client.indices.exists(index=parents_index):
-                await self.client.indices.delete(index=parents_index)
         except NotFoundError:
             raise CollectionNotFoundError(index)
         except Exception as e:
@@ -77,9 +74,6 @@ class ElasticRepository(BaseKeywordRepository):
     async def clear_index(self, index: str):
         try:
             await self.client.delete_by_query(index=index, query={"match_all": {}})
-            parents_index = f"{index}_parents"
-            if await self.client.indices.exists(index=parents_index):
-                await self.client.delete_by_query(index=parents_index, query={"match_all": {}})
         except NotFoundError:
             raise CollectionNotFoundError(index)
         except Exception as e:
