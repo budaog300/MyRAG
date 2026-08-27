@@ -34,7 +34,7 @@ class RAGService:
         collection_name: str,
         retrieve_limit: int = 50,
         merge_limit: int = 20,
-        top_K: int = 5,
+        top_k: int = 5,
         system_prompt: Optional[str] = None,
         only_context: bool = True,
         **kwargs,
@@ -65,7 +65,7 @@ class RAGService:
                 docs = await self.ai_service.reranker.compress_documents(
                     query=query,
                     documents=docs,
-                    top_K=top_K,
+                    top_K=top_k,
                 )
                 logger.info(f"Получено документов после реранкинга: {len(docs)}")
             except BaseAppException:
@@ -89,12 +89,12 @@ class RAGService:
                 logger.error(f"Ошибка при обогащении контекста: {exc}", exc_info=True)
                 raise ContextEnrichmentError(details=str(exc)) from exc
 
-        final_docs = docs[:top_K]
+        final_docs = docs[:top_k]
         if only_context:
             logger.info(f"Возврат найденных чанков без вызова LLM (only_context={only_context})")
             return final_docs
 
-        context_text = "\n\n---\n\n".join([doc.content for doc in docs[:top_K]])
+        context_text = "\n\n---\n\n".join([doc.content for doc in docs[:top_k]])
 
         prompt = (
             f"Используй следующий контекст для ответа на вопрос.\n\n"
@@ -124,7 +124,7 @@ class RAGService:
         collection_name: str,
         retrieve_limit: int = 30,
         merge_limit: int = 10,
-        top_K: int = 5,
+        top_k: int = 5,
         temperature: float = 0.3,
         max_tokens: int = 1024,
         only_context: bool = True,
@@ -142,7 +142,7 @@ class RAGService:
             collection_name=collection_name.strip(),
             retrieve_limit=retrieve_limit,
             merge_limit=merge_limit,
-            top_K=top_K,
+            top_K=top_k,
             temperature=temperature,
             max_tokens=max_tokens,
             only_context=only_context,

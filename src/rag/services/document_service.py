@@ -5,7 +5,7 @@ from typing import List, Dict, Any
 
 from src.rag.components.splitters import BaseDocumentSplitter
 from src.rag.services.convert_service import DocumentConverterService
-from src.rag.schemas.document import RawDocumentSchema, RAGDocument
+from src.rag.schemas.document import RawDocumentSchema
 from src.rag.repositories import BaseVectorRepository
 from src.rag.repositories import BaseKeywordRepository
 from src.core.exceptions import BaseAppException

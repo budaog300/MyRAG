@@ -9,7 +9,7 @@ router = APIRouter(prefix="/ingest", tags=["Ingestion"])
 @router.post(
     "",
     status_code=status.HTTP_202_ACCEPTED,
-    summary="Загрузка документации (RAG). Загрузить файлы в MinIO и поставить задачи в очередь"
+    summary="Загрузка документации (RAG). Загрузить файлы в S3 и поставить задачи в очередь"
 )
 async def ingest_documents_async(
     ingestion_service: IngestionServiceDep,

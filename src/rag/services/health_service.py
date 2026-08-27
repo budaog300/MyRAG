@@ -3,7 +3,7 @@ import logging
 from typing import Any, Dict
 from src.broker.publisher import RabbitMQPublisher
 from src.rag.repositories import BaseKeywordRepository, BaseVectorRepository
-from src.rag.services import S3Service
+from src.rag.services.s3_service import S3Service
 
 logger = logging.getLogger(__name__)
 

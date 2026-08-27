@@ -39,6 +39,9 @@ dmypy.json
 .classpath
 .settings/
 *.sublime-*
+.qdrant_storage/
+.minio-data/
+minio-data/
 
 # Jupyter
 .ipynb_checkpoints/

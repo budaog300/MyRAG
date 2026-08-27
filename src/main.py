@@ -4,8 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from src.core.logger import logger
-from src.core.config import settingsAI, settingsRabbitMQ
-from src.rag.services import RAGService, AIService, CollectionService, HealthCheckService
+from src.core.config import settingsAI, settingsRabbitMQ, settingsS3
+from src.rag.services import RAGService, AIService, CollectionService, S3Service
 from src.rag.repositories import QdrantRepository, ElasticRepository
 from src.rag.repositories.context_enricher import ContextEnricher
 from src.rag.retrievers import VectorRetriever, BM25Retriever, HybridRetriever
@@ -28,6 +28,8 @@ async def lifespan(app: FastAPI):
         routing_key=settingsRabbitMQ.documents_routing_key,
     )
     app.state.publisher = publisher
+
+    app.state.s3_service = S3Service()
     
     app.state.repo = QdrantRepository(embedder=ai_service.embedder)
     app.state.keyword_repo = ElasticRepository()
@@ -37,7 +39,7 @@ async def lifespan(app: FastAPI):
     keyword_retriever = BM25Retriever(app.state.keyword_repo)
     hybrid_retriever = HybridRetriever([vector_retriever, keyword_retriever])
 
-    app.state.collection_service = CollectionService(app.state.repo, app.state.keyword_repo)
+    app.state.collection_service = CollectionService(app.state.repo, app.state.keyword_repo, app.state.s3_service)
     app.state.rag_service = RAGService(ai_service, hybrid_retriever, enricher)
     logger.info("Приложение запущено!")
 

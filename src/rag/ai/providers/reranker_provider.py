@@ -7,7 +7,7 @@ from src.core.exceptions.provider_exceptions import AIProviderResponseParseError
 
 class RerankerProvider(BaseAIProvider, BaseRerankerProvider):
     async def rerank(
-        self, query: str, documents: List[str], top_n: Optional[int] = None
+        self, query: str, documents: List[str], top_k: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         if not documents:
             return []
@@ -16,7 +16,7 @@ class RerankerProvider(BaseAIProvider, BaseRerankerProvider):
             "model": self.config.model_name,
             "query": query,
             "documents": documents,
-            "top_n": top_n or len(documents),
+            "top_k": top_k or len(documents),
             **self.config.extra_params,
         }
 
@@ -41,15 +41,15 @@ class RerankerProvider(BaseAIProvider, BaseRerankerProvider):
         self,
         query: str,
         documents: List[RAGDocument],
-        top_K: Optional[int] = None,
+        top_k: Optional[int] = None,
     ) -> List[RAGDocument]:
         if not documents:
             return []
 
-        limit = top_K or len(documents)
+        limit = top_k or len(documents)
         texts = [doc.content for doc in documents]
 
-        results = await self.rerank(query=query, documents=texts, top_K=limit)
+        results = await self.rerank(query=query, documents=texts, top_k=limit)
         
         ranked_docs: List[RAGDocument] = []
         for item in results:
