@@ -2,7 +2,7 @@ import logging
 from typing import AsyncGenerator
 import aioboto3
 from botocore.exceptions import ClientError
-from src.core.config import settingsMinIO
+from src.core.config import settingsS3
 from src.core.exceptions import BaseAppException
 
 logger = logging.getLogger(__name__)
@@ -17,10 +17,10 @@ class S3ServiceError(BaseAppException):
 class S3Service:
     def __init__(self):
         self.session = aioboto3.Session()
-        self.endpoint_url = settingsMinIO.ENDPOINT_URL
-        self.access_key = settingsMinIO.ACCESS_KEY
-        self.secret_key = settingsMinIO.SECRET_KEY
-        self.bucket_name = settingsMinIO.BUCKET_NAME
+        self.endpoint_url = settingsS3.ENDPOINT_URL
+        self.access_key = settingsS3.ACCESS_KEY
+        self.secret_key = settingsS3.SECRET_KEY
+        self.bucket_name = settingsS3.BUCKET_NAME
 
     def _get_client(self):
         return self.session.client(
@@ -28,7 +28,7 @@ class S3Service:
             endpoint_url=self.endpoint_url,
             aws_access_key_id=self.access_key,
             aws_secret_access_key=self.secret_key,
-            region_name=settingsMinIO.REGION,
+            region_name=settingsS3.REGION,
         )
 
     async def ensure_bucket_exists(self) -> None:
@@ -80,3 +80,12 @@ class S3Service:
             except Exception as e:
                 logger.error("Ошибка удаления файла %s из S3: %s", object_key, e, exc_info=True)
                 raise S3ServiceError(f"Не удалось удалить файл из хранилища: {e}")
+
+    async def ping(self) -> bool:
+        try:
+            async with self._get_client() as s3:
+                await s3.head_bucket(Bucket=self.bucket_name)
+                return True
+        except Exception as e:
+            logger.error("S3 ping failed: %s", e)
+            return False

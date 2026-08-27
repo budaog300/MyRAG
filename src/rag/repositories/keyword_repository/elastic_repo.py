@@ -168,6 +168,9 @@ class ElasticRepository(BaseKeywordRepository):
         except Exception as e:
             raise KeywordDatabaseError(str(e))
 
+    async def ping(self) -> bool:
+        return await self.client.ping()
+
     async def close(self):
         try:
             await self.client.close()

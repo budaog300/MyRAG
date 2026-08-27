@@ -2,7 +2,7 @@ from fastapi import Request, Depends, Query
 from typing import Annotated
 
 from src.rag.repositories import BaseVectorRepository, BaseKeywordRepository
-from src.rag.services import RAGService, DocumentService, CollectionService, S3Service, DocumentIngestionService
+from src.rag.services import RAGService, DocumentService, CollectionService, S3Service, DocumentIngestionService, HealthCheckService
 from src.broker.publisher import RabbitMQPublisher
 
 
@@ -76,4 +76,19 @@ def get_ingestion_service(
     return DocumentIngestionService(s3_service=s3_service, broker=broker)
 
 
+def get_health_service(
+    repo: RepoDep,
+    keyword_repo: KeywordRepoDep,
+    s3_service: S3ServiceDep,
+    broker: RabbitMQPublisherDep,
+) -> HealthCheckService:
+    return HealthCheckService(
+        repo=repo,
+        keyword_repo=keyword_repo,
+        s3_service=s3_service,
+        broker=broker
+    )
+
+
 IngestionServiceDep = Annotated[DocumentIngestionService, Depends(get_ingestion_service)]
+HealthCheckDep = Annotated[HealthCheckService, Depends(get_health_service)]

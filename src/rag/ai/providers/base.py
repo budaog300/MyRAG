@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 
 from src.core.ai_config import ModelConfig
+from src.rag.schemas.document import RAGDocument
 from src.core.exceptions.provider_exceptions import (
     AIProviderAuthError,
     AIProviderError,
@@ -79,6 +80,15 @@ class BaseRerankerProvider(ABC):
     ) -> List[Dict[str, Any]]:
         """Возвращает список словарей вида [{'index': int, 'score': float, 'text': str}]"""
         pass
+
+    @abstractmethod
+    async def compress_documents(
+        self,
+        query: str,
+        documents: List[RAGDocument],
+        top_K: Optional[int] = None,
+    ) -> List[RAGDocument]:
+        ...
 
 
 class BaseVLMProvider(ABC):

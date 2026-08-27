@@ -48,3 +48,12 @@ class BaseRabbitMQ:
         except Exception as e:
             logger.error("Ошибка при настройке топологии RabbitMQ: %s", e)
             raise
+
+    async def ping(self) -> bool:
+        try:
+            if self.channel.is_closed:
+                return False
+            await self.channel.queue_declare(queue='', passive=True)
+            return True
+        except Exception:
+            return False

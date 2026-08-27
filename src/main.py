@@ -5,13 +5,12 @@ from contextlib import asynccontextmanager
 
 from src.core.logger import logger
 from src.core.config import settingsAI, settingsRabbitMQ
-from src.rag.services import RAGService, AIService, CollectionService
+from src.rag.services import RAGService, AIService, CollectionService, HealthCheckService
 from src.rag.repositories import QdrantRepository, ElasticRepository
 from src.rag.repositories.context_enricher import ContextEnricher
 from src.rag.retrievers import VectorRetriever, BM25Retriever, HybridRetriever
 from src.api.exception_handlers import register_exception_handlers
-from src.api.deps import IngestionServiceDep
-from src.api.routes import router_vector_repo, router_keyword_repo, router_admin_repo, router_ingest
+from src.api.routes import router_vector_repo, router_keyword_repo, router_admin_repo, router_ingest, router_health
 from src.broker.publisher import RabbitMQPublisher
 
 
@@ -67,6 +66,7 @@ app.include_router(router_vector_repo, prefix="/api/v1")
 app.include_router(router_keyword_repo, prefix="/api/v1")
 app.include_router(router_admin_repo, prefix="/api/v1")
 app.include_router(router_ingest, prefix="/api/v1")
+app.include_router(router_health, prefix="/api/v1")
 
 
 @app.middleware("http")
@@ -76,11 +76,6 @@ async def add_process_time_header(request: Request, call_next):
     process_time = time.perf_counter() - start
     response.headers["X-Process-Time"] = str(process_time)
     return response
-
-
-@app.get("/health", tags=["Проверка сервера"])
-async def health():
-    return {"message": "success"}
 
 
 if __name__ == "__main__":

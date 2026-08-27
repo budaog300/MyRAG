@@ -17,20 +17,20 @@ async def admin_create_collection(
     return {"message": f"Коллекция и индексы для '{collection.name}' успешно созданы"}
 
 
-@router.get("/{collection_name}", summary="Детальная информация о коллекции (Vector repo + Keyword repo)")
-async def admin_get_collection_details(
-    collection_name: str, 
-    service: CollectionDep
-):
-    return await service.get_collection_details(collection_name)
-
-
 @router.get("/", response_model=List[CollectionSchema], summary="Получить список коллекций")
 async def admin_get_collections(
     service: CollectionDep,
     include_parents: bool = Query(default=False, description="Включать ли служебные коллекции (*_parents)")    
 ):
     return await service.get_collections(include_parents=include_parents)
+
+
+@router.get("/{collection_name}", summary="Детальная информация о коллекции (Vector repo + Keyword repo)")
+async def admin_get_collection_details(
+    collection_name: str, 
+    service: CollectionDep
+):
+    return await service.get_collection_details(collection_name)
 
 
 @router.delete("/{collection_name}/points", summary="Очистить содержимое коллекции")

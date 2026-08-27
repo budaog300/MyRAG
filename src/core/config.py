@@ -114,18 +114,18 @@ class SettingsRabbitMQ(BaseSettings):
         return f"amqp://{self.RABBITMQ_USER}:{self.RABBITMQ_PASSWORD}@{self.RABBITMQ_HOST}:{self.RABBITMQ_PORT}/{self.RABBITMQ_VHOST.lstrip('/')}"
 
 
-class SettingsMinIO(BaseSettings):
+class SettingsS3(BaseSettings):
     ENDPOINT_URL: str = Field(default="http://localhost:9000")
     ACCESS_KEY: str = Field(default="admin")
     SECRET_KEY: str = Field(default="admin")
     BUCKET_NAME: str = Field(default="documents")
     REGION: str = Field(default="us-east-1")
 
-    model_config = SettingsConfigDict(env_file=".env.minio", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env.s3", extra="ignore")
     
 
 settingsAI = SettingsAI()
 settingsQdrant = SettingsQdrant()
 settingsElastic = SettingsElastic()
 settingsRabbitMQ = SettingsRabbitMQ()
-settingsMinIO = SettingsMinIO()
+settingsS3 = SettingsS3()

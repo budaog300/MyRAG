@@ -41,15 +41,15 @@ class RerankerProvider(BaseAIProvider, BaseRerankerProvider):
         self,
         query: str,
         documents: List[RAGDocument],
-        top_n: Optional[int] = None,
+        top_K: Optional[int] = None,
     ) -> List[RAGDocument]:
         if not documents:
             return []
 
-        limit = top_n or len(documents)
+        limit = top_K or len(documents)
         texts = [doc.content for doc in documents]
 
-        results = await self.rerank(query=query, documents=texts, top_n=limit)
+        results = await self.rerank(query=query, documents=texts, top_K=limit)
         
         ranked_docs: List[RAGDocument] = []
         for item in results:

@@ -401,6 +401,13 @@ class QdrantRepository(BaseVectorRepository):
                 f"Ошибка получения S3 ключей коллекции: {e}"
             )
 
+    async def ping(self) -> bool:
+        try:
+            await self.client.get_collections()
+            return True
+        except Exception as e:
+            return False
+
     async def close(self):
         try:
             await self.client.close()
