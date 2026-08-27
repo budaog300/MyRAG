@@ -2,9 +2,9 @@ import asyncio
 import logging
 from src.core.config import settingsRabbitMQ, settingsAI
 from src.broker.consumer import RabbitMQConsumer
-from src.api.schemas.request_schemas import IngestDataSchema
+from src.rag.schemas.ingest import IngestDataSchema
 from src.rag.repositories import QdrantRepository, ElasticRepository
-from src.rag.services import DocumentService, DocumentConverterService, AIService, S3Service
+from src.services import DocumentService, DocumentConverterService, AIService, S3Service
 from src.rag.components.converters import DoclingDocumentConverter, TextDocumentConverter, VLMImageConverter, ExcelConverter
 from src.rag.components.splitters import HierarchicalMarkdownSplitter
 from src.worker_handler import process_document_task
@@ -40,13 +40,9 @@ async def main():
     doc_service = DocumentService(repo, keyword_repo, converter_service, splitter)
     s3_service = S3Service()
 
-    consumer = RabbitMQConsumer(url=settingsRabbitMQ.get_auth_data)
+    consumer = RabbitMQConsumer()
     await consumer.connect()
-    await consumer.setup_topology(
-        exchange_name=settingsRabbitMQ.documents_exchange,
-        queue_name=settingsRabbitMQ.documents_queue,
-        routing_key=settingsRabbitMQ.documents_routing_key,
-    )
+    await consumer.setup_topology()
 
     async def handle_message(task: IngestDataSchema):
         await process_document_task(

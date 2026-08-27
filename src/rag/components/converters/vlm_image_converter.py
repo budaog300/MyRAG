@@ -7,7 +7,7 @@ from typing import Set
 import httpx
 
 from src.rag.components.converters.base import BaseDocumentConverter
-from src.rag.services import AIService
+from src.services import AIService
 from src.core.exceptions.provider_exceptions import (
     AIProviderResponseParseError,    
     VLMError

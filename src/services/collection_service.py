@@ -2,7 +2,8 @@ import logging
 import asyncio
 from uuid import UUID
 from typing import List, Dict, Any, Optional
-from src.rag.services.s3_service import S3Service
+
+from src.services.s3_service import S3Service
 from src.rag.repositories import BaseKeywordRepository, BaseVectorRepository
 from src.rag.schemas.document import CollectionSchema, RAGDocument
 from src.core.exceptions import BaseAppException

@@ -3,7 +3,7 @@ import asyncio
 from pathlib import Path
 from src.core.logger import logger
 from src.core.config import settingsAI
-from src.rag.services import DocumentService, DocumentConverterService, AIService
+from src.services import DocumentService, DocumentConverterService, AIService
 from src.rag.schemas.document import RawDocumentSchema
 from src.rag.repositories import QdrantRepository, ElasticRepository
 from src.rag.components.converters import DoclingDocumentConverter, TextDocumentConverter, VLMImageConverter, ExcelConverter

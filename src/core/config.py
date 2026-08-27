@@ -122,6 +122,23 @@ class SettingsS3(BaseSettings):
     REGION: str = Field(default="us-east-1")
 
     model_config = SettingsConfigDict(env_file=".env.s3", extra="ignore")
+
+
+class SettingsDB(BaseSettings):
+    USER: str = Field(default="postgres")
+    PASSWORD: str = Field(default="123")
+    HOST: str = Field(default="localhost")
+    PORT: int = Field(default=5432)
+    DB_NAME: str = Field(default="rag_db")
+    
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 20
+
+    model_config = SettingsConfigDict(env_file=".env.db", extra="ignore")
+
+    @property
+    def get_auth_data(self) -> str:
+        return f"postgresql+asyncpg://{self.USER}:{self.PASSWORD}@{self.HOST}:{self.PORT}/{self.DB_NAME}"
     
 
 settingsAI = SettingsAI()
@@ -129,3 +146,4 @@ settingsQdrant = SettingsQdrant()
 settingsElastic = SettingsElastic()
 settingsRabbitMQ = SettingsRabbitMQ()
 settingsS3 = SettingsS3()
+settingsDB = SettingsDB()

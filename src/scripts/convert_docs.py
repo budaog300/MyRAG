@@ -2,8 +2,8 @@ import asyncio
 from pathlib import Path
 from src.core.ai_config import ModelConfig, CodeFormulaConfig, EngineMode, AIServiceConfig
 from src.rag.components.converters import DoclingDocumentConverter, TextDocumentConverter, VLMImageConverter, ExcelConverter
-from src.rag.services.convert_service import DocumentConverterService
-from src.rag.services.ai_service import AIService
+from src.services.convert_service import DocumentConverterService
+from services.ai_service import AIService
 from src.core.config import settingsAI
 import torch
 

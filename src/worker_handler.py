@@ -1,7 +1,7 @@
 import logging
-from src.api.schemas.request_schemas import IngestDataSchema
+from src.rag.schemas.ingest import IngestDataSchema
 from src.rag.schemas.document import RawDocumentSchema
-from src.rag.services import S3Service, DocumentService
+from src.services import S3Service, DocumentService
 
 logger = logging.getLogger(__name__)
 

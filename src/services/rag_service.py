@@ -2,7 +2,7 @@ import logging
 from typing import Optional, Dict, Any, List, Union
 
 from src.rag.retrievers import BaseRetriever
-from src.rag.services.ai_service import AIService
+from src.services.ai_service import AIService
 from src.rag.repositories.context_enricher import ContextEnricher
 from src.core.exceptions import BaseAppException
 from src.core.exceptions.rag_service_exceptions import (

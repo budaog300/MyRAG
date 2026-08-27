@@ -2,6 +2,7 @@ import logging
 import aio_pika
 from pydantic import BaseModel
 from src.broker.base import BaseRabbitMQ
+from src.core.config import settingsRabbitMQ
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +10,12 @@ logger = logging.getLogger(__name__)
 class RabbitMQPublisher(BaseRabbitMQ):
     """Издатель сообщений в RabbitMQ."""
 
-    async def publish(self, obj: BaseModel, exchange_name: str, routing_key: str) -> None:
+    async def publish(
+        self,
+        obj: BaseModel,
+        exchange_name: str = settingsRabbitMQ.documents_exchange,
+        routing_key: str = settingsRabbitMQ.documents_routing_key,
+    ) -> None:
         if not self.channel or self.channel.is_closed:
             raise RuntimeError("Канал RabbitMQ не инициализирован. Вызовите connect() перед публикацией.")
 

@@ -4,7 +4,7 @@ from elasticsearch import AsyncElasticsearch, helpers
 from elasticsearch.exceptions import BadRequestError, NotFoundError
 
 from src.core.config import settingsElastic
-from src.rag.repositories import BaseKeywordRepository
+from src.rag.repositories.keyword_repository.base import BaseKeywordRepository
 from src.rag.schemas.document import RAGDocument, IndexSchema
 from src.core.exceptions.repo_exceptions import (
     CollectionAlreadyExistsError,

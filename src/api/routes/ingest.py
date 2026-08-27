@@ -1,6 +1,6 @@
 from typing import Annotated
 from fastapi import APIRouter, File, Form, UploadFile, status
-from src.api.schemas import IngestionConfigParams
+from src.rag.schemas.ingest import IngestionConfigParams
 from src.api.deps import IngestionServiceDep
 
 router = APIRouter(prefix="/ingest", tags=["Ingestion"])

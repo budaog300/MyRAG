@@ -3,7 +3,8 @@ import logging
 from typing import Any, Dict
 from src.broker.publisher import RabbitMQPublisher
 from src.rag.repositories import BaseKeywordRepository, BaseVectorRepository
-from src.rag.services.s3_service import S3Service
+from src.db.repositories import BaseRepository
+from src.services.s3_service import S3Service
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +16,13 @@ class HealthCheckService:
         keyword_repo: BaseKeywordRepository,
         broker: RabbitMQPublisher,
         s3_service: S3Service,
-
+        db_repo: BaseRepository
     ):
         self.repo = repo
         self.keyword_repo = keyword_repo
         self.broker = broker
         self.s3_service = s3_service
+        self.db_repo = db_repo
 
     async def check_repo(self) -> bool:
         """Векторная БД."""
@@ -36,7 +38,7 @@ class HealthCheckService:
         try:
             return await self.keyword_repo.ping()
         except Exception as e:
-            logger.error("Healthcheck failed for Elasticsearch: %s", e)
+            logger.error("Healthcheck failed for Keyword repository: %s", e)
             return False
     
     async def check_broker(self) -> bool:
@@ -58,12 +60,12 @@ class HealthCheckService:
             return False
     
     async def check_postgres(self) -> bool:
-        """Заглушка для Реляционной БД."""
-        # TODO: Заменить на реальный `SELECT 1` при подключении БД
+        """Реляционная БД."""
         try:
+            await self.db_repo.ping()
             return True
         except Exception as e:
-            logger.error("Healthcheck failed for Postgres storage: %s", e)
+            logger.error("Healthcheck failed for DB repository: %s", e)
             return False
 
     async def check_redis(self) -> bool:

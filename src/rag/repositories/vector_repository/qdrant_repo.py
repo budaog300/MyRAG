@@ -6,7 +6,7 @@ from qdrant_client.http.exceptions import UnexpectedResponse
 from qdrant_client.models import Distance, VectorParams, PointStruct, Document
 
 from src.core.config import settingsQdrant
-from src.rag.repositories import BaseVectorRepository
+from src.rag.repositories.vector_repository.base import BaseVectorRepository
 from src.rag.schemas.document import CollectionSchema, RAGDocument
 from src.rag.ai.providers import BaseEmbedderProvider
 from src.core.exceptions.repo_exceptions import (

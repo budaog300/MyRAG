@@ -4,6 +4,7 @@ import aio_pika
 from pydantic import BaseModel, ValidationError
 from src.broker.base import BaseRabbitMQ
 from src.core.exceptions import BaseAppException
+from src.core.config import settingsRabbitMQ
 
 logger = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseModel)
@@ -14,9 +15,9 @@ class RabbitMQConsumer(BaseRabbitMQ):
 
     async def consume(
         self,
-        queue_name: str,
         obj: Type[T],
         func: Callable[[T], Awaitable[None]],
+        queue_name: str = settingsRabbitMQ.documents_queue,
     ) -> None:
         if not self.channel or self.channel.is_closed:
             raise RuntimeError("Канал RabbitMQ не инициализирован.")

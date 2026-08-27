@@ -1,14 +1,16 @@
 import logging
 import aio_pika
 
+from src.core.config import settingsRabbitMQ
+
 logger = logging.getLogger(__name__)
 
 
 class BaseRabbitMQ:
     """Базовый класс для работы с RabbitMQ."""
 
-    def __init__(self, url: str):
-        self.url = url
+    def __init__(self):
+        self.url = settingsRabbitMQ.get_auth_data
         self.connection: aio_pika.RobustConnection | None = None
         self.channel: aio_pika.RobustChannel | None = None
 
@@ -32,7 +34,12 @@ class BaseRabbitMQ:
             await self.connection.close()
             logger.info("Соединение с RabbitMQ закрыто")
 
-    async def setup_topology(self, exchange_name: str, queue_name: str, routing_key: str) -> None:
+    async def setup_topology(
+        self,
+        exchange_name: str = settingsRabbitMQ.documents_exchange,
+        queue_name: str = settingsRabbitMQ.documents_queue,
+        routing_key: str = settingsRabbitMQ.documents_routing_key,
+    ) -> None:
         if not self.channel or self.channel.is_closed:
             raise RuntimeError("Канал RabbitMQ не инициализирован. Вызовите connect() перед настройкой топологии.")
 

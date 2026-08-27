@@ -4,29 +4,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from src.core.logger import logger
-from src.core.config import settingsAI, settingsRabbitMQ, settingsS3
-from src.rag.services import RAGService, AIService, CollectionService, S3Service
+from src.services import RAGService, AIService, CollectionService, S3Service
 from src.rag.repositories import QdrantRepository, ElasticRepository
 from src.rag.repositories.context_enricher import ContextEnricher
 from src.rag.retrievers import VectorRetriever, BM25Retriever, HybridRetriever
 from src.api.exception_handlers import register_exception_handlers
 from src.api.routes import router_vector_repo, router_keyword_repo, router_admin_repo, router_ingest, router_health
 from src.broker.publisher import RabbitMQPublisher
+from src.db.database import engine
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Запускаем приложение...")
-    ai_config = settingsAI.build_ai_config()
-    ai_service = AIService(ai_config)
+    ai_service = AIService()
 
-    publisher = RabbitMQPublisher(url=settingsRabbitMQ.get_auth_data)
+    publisher = RabbitMQPublisher()
     await publisher.connect()
-    await publisher.setup_topology(
-        exchange_name=settingsRabbitMQ.documents_exchange,
-        queue_name=settingsRabbitMQ.documents_queue,
-        routing_key=settingsRabbitMQ.documents_routing_key,
-    )
+    await publisher.setup_topology()
     app.state.publisher = publisher
 
     app.state.s3_service = S3Service()
@@ -46,6 +41,7 @@ async def lifespan(app: FastAPI):
     yield
 
     logger.info("Останавливаем приложение...")
+    await engine.dispose()
     await app.state.publisher.close()
     await app.state.repo.close()
     await app.state.keyword_repo.close()    

@@ -7,6 +7,7 @@ from src.core.exceptions.ai_service_exceptions import (
     UnsupportedEngineModeError,
 )
 from src.core.exceptions.provider_exceptions import AIProviderNotConfiguredError
+from src.core.config import settingsAI
 
 logger = logging.getLogger(__name__)
 
@@ -14,8 +15,8 @@ logger = logging.getLogger(__name__)
 class AIService:
     """Центральный сервис-фабрика для управления AI-провайдерами (LLM, Embedder, VLM, Reranker)."""
 
-    def __init__(self, config: AIServiceConfig):
-        self.config = config
+    def __init__(self, config: AIServiceConfig | None = None):
+        self.config = config or settingsAI.build_ai_config()
 
         self.llm: Optional[BaseLLMProvider] = (
             self._init_llm(config.llm) if config.llm and getattr(config.llm, "enabled", True) else None

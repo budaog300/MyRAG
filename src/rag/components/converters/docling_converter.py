@@ -21,7 +21,7 @@ from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.datamodel.base_models import InputFormat
 
 from src.rag.components.converters import BaseDocumentConverter
-from src.rag.services import AIService
+from src.services import AIService
 from src.core.ai_config import CodeFormulaConfig, EngineMode
 from src.core.exceptions import BaseAppException
 from src.core.exceptions.converter_exceptions import (

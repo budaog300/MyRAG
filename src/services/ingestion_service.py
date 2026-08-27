@@ -3,8 +3,8 @@ import hashlib
 from uuid import uuid4
 from fastapi import UploadFile
 from src.broker.publisher import RabbitMQPublisher
-from src.api.schemas.request_schemas import IngestDataSchema
-from src.rag.services.s3_service import S3Service
+from src.rag.schemas.ingest import IngestDataSchema
+from src.services.s3_service import S3Service
 
 
 class DocumentIngestionService:
