@@ -244,25 +244,22 @@ class QdrantRepository(BaseVectorRepository):
     async def get_chunks(
         self,
         collection_name: str,
-        document_id: UUID | None = None,
-        limit: int = 100,
+        document_id: UUID,
+        limit: int | None = None,
         offset: str | None = None,
     ) -> Tuple[List[RAGDocument], str | None]:
 
-        try:
-            query_filter = None
-
-            if document_id is not None:
-                query_filter = models.Filter(
-                    must=[
-                        models.FieldCondition(
-                            key="metadata.document_id",
-                            match=models.MatchValue(
-                                value=str(document_id)
-                            ),
-                        )
-                    ]
-                )
+        try:            
+            query_filter = models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="metadata.document_id",
+                        match=models.MatchValue(
+                            value=str(document_id)
+                        ),
+                    )
+                ]
+            )
 
             points, next_offset = await self.client.scroll(
                 collection_name=collection_name,
@@ -286,7 +283,6 @@ class QdrantRepository(BaseVectorRepository):
             ]
             return chunks, str(next_offset) if next_offset is not None else None
 
-
         except UnexpectedResponse as e:
             if e.status_code == 404:
                 raise CollectionNotFoundError(collection_name)
@@ -296,110 +292,7 @@ class QdrantRepository(BaseVectorRepository):
         except Exception as e:
             raise VectorDatabaseError(
                 f"Ошибка получения chunks из Qdrant: {e}"
-            )
-
-    async def get_s3_keys_by_document_id(
-        self,
-        collection_name: str,
-        document_id: UUID,
-    ) -> Set[str]:
-
-        try:
-            query_filter = models.Filter(
-                must=[
-                    models.FieldCondition(
-                        key="metadata.document_id",
-                        match=models.MatchValue(
-                            value=str(document_id),
-                        ),
-                    )
-                ]
-            )
-
-            s3_keys: set[str] = set()
-
-            offset = None
-
-            while True:
-                points, next_offset = await self.client.scroll(
-                    collection_name=collection_name,
-                    scroll_filter=query_filter,
-                    limit=100,
-                    offset=offset,
-                    with_payload=True,
-                    with_vectors=False,
-                )
-
-                for point in points:
-                    metadata = point.payload.get("metadata", {})
-
-                    s3_key = metadata.get("s3_key")
-
-                    if s3_key:
-                        s3_keys.add(s3_key)
-
-                if next_offset is None:
-                    break
-
-                offset = next_offset
-
-            return s3_keys
-
-        except UnexpectedResponse as e:
-            if e.status_code == 404:
-                raise CollectionNotFoundError(collection_name)
-
-            raise VectorDatabaseError(str(e))
-
-        except Exception as e:
-            raise VectorDatabaseError(
-                f"Ошибка получения S3 ключей документа: {e}"
-            )
-
-    async def get_s3_keys(
-        self,
-        collection_name: str,
-    ) -> Set[str]:
-
-        try:
-            s3_keys: set[str] = set()
-
-            offset = None
-
-            while True:
-                points, next_offset = await self.client.scroll(
-                    collection_name=collection_name,
-                    limit=100,
-                    offset=offset,
-                    with_payload=True,
-                    with_vectors=False,
-                )
-
-                for point in points:
-                    metadata = point.payload.get("metadata", {})
-
-                    s3_key = metadata.get("s3_key")
-
-                    if s3_key:
-                        s3_keys.add(s3_key)
-
-                if next_offset is None:
-                    break
-
-                offset = next_offset
-
-            return s3_keys
-
-        except UnexpectedResponse as e:
-            if e.status_code == 404:
-                raise CollectionNotFoundError(collection_name)
-
-            raise VectorDatabaseError(str(e))
-
-        except Exception as e:
-            raise VectorDatabaseError(
-                f"Ошибка получения S3 ключей коллекции: {e}"
-            )
+            )    
 
     async def ping(self) -> bool:
         try:

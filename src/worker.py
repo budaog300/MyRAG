@@ -4,6 +4,8 @@ from src.core.config import settingsRabbitMQ, settingsAI
 from src.broker.consumer import RabbitMQConsumer
 from src.rag.schemas.ingest import IngestDataSchema
 from src.rag.repositories import QdrantRepository, ElasticRepository
+from src.db.repositories import RepositoryContainer, CollectionRepository, DocumentRepository
+from src.db.database import async_session
 from src.services import DocumentService, DocumentConverterService, AIService, S3Service
 from src.rag.components.converters import DoclingDocumentConverter, TextDocumentConverter, VLMImageConverter, ExcelConverter
 from src.rag.components.splitters import HierarchicalMarkdownSplitter
@@ -19,6 +21,8 @@ async def main():
     
     repo = QdrantRepository(ai_service.embedder)
     keyword_repo = ElasticRepository()
+
+    repos = RepositoryContainer()
 
     logger.info("Инициализируем конвертеры...")
     docling_converter = DoclingDocumentConverter(ai_service)
@@ -45,11 +49,19 @@ async def main():
     await consumer.setup_topology()
 
     async def handle_message(task: IngestDataSchema):
-        await process_document_task(
-            task=task, 
-            document_service=doc_service, 
-            s3_service=s3_service
-        )
+        async with async_session() as session:
+
+            repos = RepositoryContainer(
+                collection_repo=CollectionRepository(session),
+                document_repo=DocumentRepository(session),
+            )
+            
+            await process_document_task(
+                task=task, 
+                document_service=doc_service, 
+                s3_service=s3_service,
+                repos=repos
+            )
 
     logger.info("Запуск воркера обработки документов...")
     

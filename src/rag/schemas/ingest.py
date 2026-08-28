@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 
 
 class IngestionConfigParams(BaseModel):
-    collection_name: str = Field(..., description="Название коллекции")
+    collection_id: UUID = Field(..., description="ID коллекции")
     parent_chunk_size: int | None = Field(default=None, ge=1, description="Размер родительского чанка")
     parent_chunk_overlap: int | None = Field(default=None, ge=0, description="Перекрытие родительских чанков")
     chunk_size: int | None = Field(default=None, ge=1, description="Размер дочернего чанка")

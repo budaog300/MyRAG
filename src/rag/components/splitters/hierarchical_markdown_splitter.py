@@ -21,7 +21,7 @@ class HierarchicalMarkdownSplitter(BaseDocumentSplitter):
         self,
         parent_chunk_size: int = 3000,
         parent_chunk_overlap: int = 100,
-        chunk_size: int = 400,
+        chunk_size: int = 500,
         chunk_overlap: int = 50,
         headers_to_split_on: list[tuple[str, str]] | None = None,
         delimiter: str = DOCUMENT_DELIMITER,

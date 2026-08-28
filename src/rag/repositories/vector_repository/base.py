@@ -59,26 +59,11 @@ class BaseVectorRepository(ABC):
     async def get_chunks(
         self,
         collection_name: str,
-        document_id: UUID | None = None,
-        limit: int = 100,
+        document_id: UUID,
+        limit: int | None = None,
         offset: str | None = None,
     ) -> Tuple[List[RAGDocument], str | None]:
-        ...
-
-    @abstractmethod
-    async def get_s3_keys_by_document_id(
-        self,
-        collection_name: str,
-        document_id: UUID,
-    ) -> Set[str]:
-        ...
-
-    @abstractmethod
-    async def get_s3_keys(
-        self,
-        collection_name: str,
-    ) -> Set[str]:
-        ...
+        ... 
 
     @abstractmethod
     async def ping(self) -> bool: ...

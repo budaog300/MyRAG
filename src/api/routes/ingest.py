@@ -14,14 +14,14 @@ router = APIRouter(prefix="/ingest", tags=["Ingestion"])
 async def ingest_documents_async(
     ingestion_service: IngestionServiceDep,
     files: list[UploadFile] = File(...),
-    collection_name: Annotated[str, Form(description="Название коллекции")] = ...,
+    collection_id: Annotated[str, Form(description="Название коллекции")] = ...,
     parent_chunk_size: Annotated[int | None, Form(description="Размер родительского чанка")] = None,
     parent_chunk_overlap: Annotated[int | None, Form(description="Перекрытие родительских чанков")] = None,
     chunk_size: Annotated[int | None, Form(description="Размер дочернего чанка")] = None,
     chunk_overlap: Annotated[int | None, Form(description="Перекрытие дочерних чанков")] = None
 ):
     config = IngestionConfigParams(
-        collection_name=collection_name,
+        collection_id=collection_id,
         parent_chunk_size=parent_chunk_size,
         parent_chunk_overlap=parent_chunk_overlap,
         chunk_size=chunk_size,

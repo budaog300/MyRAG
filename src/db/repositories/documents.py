@@ -1,4 +1,4 @@
-import uuid
+from uuid import UUID
 
 from sqlalchemy import select
 
@@ -9,16 +9,20 @@ from src.db.repositories.base import BaseRepository
 class DocumentRepository(BaseRepository):
     async def create(
         self,
-        collection_id: uuid.UUID,
+        id: UUID,
+        collection_id: UUID,
         filename: str,
         s3_key: str,
+        status: DocumentStatus = DocumentStatus.PENDING,
         mime_type: str | None = None,
         size_bytes: int | None = None,
     ) -> DocumentModel:
         document = DocumentModel(
+            id=id,
             collection_id=collection_id,
             filename=filename,
             s3_key=s3_key,
+            status=status,
             mime_type=mime_type,
             size_bytes=size_bytes,
         )
@@ -30,7 +34,7 @@ class DocumentRepository(BaseRepository):
 
     async def get_by_id(
         self,
-        document_id: uuid.UUID,
+        document_id: UUID,
     ) -> DocumentModel | None:
         result = await self.session.execute(
             select(DocumentModel).where(
@@ -52,9 +56,9 @@ class DocumentRepository(BaseRepository):
 
         return result.scalar_one_or_none()
 
-    async def get_by_collection(
+    async def get_by_collection_id(
         self,
-        collection_id: uuid.UUID,
+        collection_id: UUID,
     ) -> list[DocumentModel]:
         result = await self.session.execute(
             select(DocumentModel)
@@ -66,7 +70,7 @@ class DocumentRepository(BaseRepository):
 
     async def update_status(
         self,
-        document_id: uuid.UUID,
+        document_id: UUID,
         status: DocumentStatus,
         error_message: str | None = None,
     ) -> DocumentModel | None:

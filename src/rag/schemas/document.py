@@ -24,9 +24,11 @@ class RawDocumentSchema(BaseModel):
 
 
 class CollectionSchema(BaseModel):
+    id: UUID
     name: str
     size: Optional[int] = None
     distance: Optional[str] = None
+    description: Optional[str] = None
 
 
 class IndexSchema(BaseModel):

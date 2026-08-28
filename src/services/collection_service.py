@@ -5,28 +5,44 @@ from typing import List, Dict, Any, Optional
 
 from src.services.s3_service import S3Service
 from src.rag.repositories import BaseKeywordRepository, BaseVectorRepository
-from src.rag.schemas.document import CollectionSchema, RAGDocument
+from src.rag.schemas.document import CollectionSchema
+from src.db.repositories import RepositoryContainer
+from src.db.models import CollectionModel
 from src.core.exceptions import BaseAppException
 from src.core.exceptions.repo_exceptions import (
     CollectionOperationError,
     InvalidCollectionNameError,
+    CollectionNotFoundError
 )
 
 logger = logging.getLogger(__name__)
 
 
 class CollectionService:
-    def __init__(self, vector_repo: BaseVectorRepository, keyword_repo: BaseKeywordRepository, s3_service: S3Service):
-        self.vector_repo = vector_repo,
-        self.keyword_repo = keyword_repo,
+    def __init__(
+            self, 
+            vector_repo: BaseVectorRepository, 
+            keyword_repo: BaseKeywordRepository, 
+            s3_service: S3Service,
+            repos: RepositoryContainer,
+        ):
+        self.vector_repo = vector_repo
+        self.keyword_repo = keyword_repo
         self.s3_service = s3_service
+        self.repos = repos
 
     def _validate_collection_name(self, name: str) -> None:
         """Проверяет валидность названия коллекции."""
         if not name or not name.strip():
             raise InvalidCollectionNameError(collection_name=name)
 
-    async def create_collection(self, name: str, size: int = 1024, distance: str = "COSINE") -> None:
+    async def create_collection(
+        self,
+        name: str,
+        size: int = 1024,
+        distance: str = "COSINE",
+        description: str | None = None,
+    ) -> CollectionModel:
         self._validate_collection_name(name)
 
         if size <= 0:
@@ -37,10 +53,20 @@ class CollectionService:
             )
 
         logger.info(f"Создание коллекции '{name}' (size={size}, distance={distance})")
+
+        collection = await self.repos.collection_repo.create(
+            name=name,
+            description=description,
+        )
+
+        await self.repos.collection_repo.session.commit()
+
+        collection_name = str(collection.id)
+       
         try:
             await asyncio.gather(
-                self.vector_repo.create_collection(collection_name=name, size=size, distance=distance),
-                self.keyword_repo.create_index(index=name),
+                self.vector_repo.create_collection(collection_name=collection_name, size=size, distance=distance),
+                self.keyword_repo.create_index(index=collection_name),
             )
         except BaseAppException:
             raise
@@ -48,9 +74,10 @@ class CollectionService:
             logger.error(f"Ошибка при создании коллекции '{name}': {exc}")
             raise CollectionOperationError(operation="create", collection_name=name, details=str(exc)) from exc
 
-    async def get_collections(self, include_parents: bool = False) -> List[CollectionSchema]:
+    async def get_collections(self) -> List[CollectionSchema]:
         try:
-            return await self.vector_repo.get_collections(include_parents=include_parents)
+            collections = await self.repos.collection_repo.get_all()
+            return collections
         except BaseAppException:
             raise
         except Exception as exc:
@@ -61,55 +88,63 @@ class CollectionService:
                 details=str(exc),
             ) from exc
 
-    async def get_collection_details(self, name: str) -> Dict[str, Any]:
-        self._validate_collection_name(name)
-
+    async def get_collection_details(self, collection_id: UUID) -> Dict[str, Any]:
         try:
+            collection = await self.repos.collection_repo.get_by_name(collection_id)
+
+            collection_name = str(collection.id)
+
+            if collection is None:
+                raise CollectionNotFoundError(collection_name)
+            
             vector_repo_info, keyword_repo_info = await asyncio.gather(
-                self.vector_repo.get_collection_details(name),
-                self.keyword_repo.get_index_details(name),
+                self.vector_repo.get_collection_details(collection_name),
+                self.keyword_repo.get_index_details(collection_name),
             )
+
             return {
-                "name": name,
+                "id": collection_name,
+                "name": collection.name,
+                "description": collection.description,
+                "created_at": collection.created_at,
+                "updated_at": collection.updated_at,
                 "vector_repo_info": vector_repo_info,
                 "keyword_repo_info": keyword_repo_info,
             }
         except BaseAppException:
             raise
         except Exception as exc:
-            logger.error(f"Ошибка при получении деталей коллекции '{name}': {exc}")
+            logger.error(f"Ошибка при получении деталей коллекции '{collection_id}': {exc}")
             raise CollectionOperationError(
                 operation="get_details",
-                collection_name=name,
+                collection_name=collection_id,
                 details=str(exc),
             ) from exc
 
-    async def clear_collection(self, name: str) -> None:
-        self._validate_collection_name(name)
-
-        logger.info(f"Очистка содержимого коллекции '{name}'")
+    async def clear_collection(self, collection_id: UUID) -> None:
+        collection = await self.repos.collection_repo.get_by_name(collection_id)
+        if collection is None:
+            raise CollectionNotFoundError(collection_id)
+        logger.info(f"Очистка содержимого коллекции '{collection.name}'")
         try:
-            s3_keys = await self.vector_repo.get_s3_keys(
-                collection_name=name,
-            )
+            documents = await self.repos.document_repo.get_by_collection_id(collection.id)
+            collection_name = str(collection_id)
             await asyncio.gather(
-                self.vector_repo.clear_collection(name),
-                self.keyword_repo.clear_index(name),
-            )
-            await asyncio.gather(
+                self.vector_repo.clear_collection(collection_name),
+                self.keyword_repo.clear_index(collection_name),
                 *[
-                    self.s3_service.delete_file(s3_key)
-                    for s3_key in s3_keys
+                    self.s3_service.delete_file(document.s3_key)
+                    for document in documents
                 ]
             )
-            logger.info(f"Коллекция '{name}' очищена. Удалено S3 файлов: {len(s3_keys)}")
+            logger.info(f"Коллекция '{collection.name}' очищена. Удалено S3 файлов: {len(documents)}")
         except BaseAppException:
             raise
         except Exception as exc:
-            logger.error(f"Ошибка при очистке коллекции '{name}': {exc}")
-            raise CollectionOperationError(operation="clear", collection_name=name, details=str(exc)) from exc
+            logger.error(f"Ошибка при очистке коллекции '{collection.name}': {exc}")
+            raise CollectionOperationError(operation="clear", collection_name=collection.name, details=str(exc)) from exc
 
-    async def delete_collection(self, name: str) -> None:
+    async def delete_collection(self, collection_id: UUID) -> None:
         self._validate_collection_name(name)
 
         logger.info(f"Удаление коллекции '{name}")
@@ -135,7 +170,7 @@ class CollectionService:
             raise CollectionOperationError(operation="delete", collection_name=name, details=str(exc)) from exc
 
     async def delete_document(
-        self, name: str, document_id: UUID,
+        self, collection_id: UUID, document_id: UUID,
     ) -> None:
         self._validate_collection_name(name)
         if document_id is None:
@@ -176,36 +211,3 @@ class CollectionService:
                 collection_name=name,
                 details=str(exc),
             ) from exc
-
-    async def get_chunks(
-        self,
-        collection_name: str,
-        document_id: UUID | None = None,
-        limit: int = 100,
-        offset: str | None = None,
-    ) -> List[RAGDocument]:
-
-        self._validate_collection_name(collection_name)
-
-        if limit <= 0:
-            raise CollectionOperationError(
-                operation="get_chunks",
-                collection_name=collection_name,
-                details="limit должен быть больше 0",
-            )
-
-        try:
-            return await self.vector_repo.get_chunks(
-                collection_name=collection_name,
-                document_id=document_id,
-                limit=limit,
-                offset=offset
-            )
-
-        except BaseAppException:
-            raise
-
-        except Exception as exc:
-            logger.error("Ошибка получения chunks коллекции '%s': %s", collection_name, exc)
-
-            raise CollectionOperationError(operation="get_chunks", collection_name=collection_name, details=str(exc)) from exc

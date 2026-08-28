@@ -4,6 +4,7 @@ from typing import Annotated
 
 from src.rag.repositories import BaseVectorRepository, BaseKeywordRepository
 from src.services import RAGService, DocumentService, CollectionService, S3Service, DocumentIngestionService, HealthCheckService
+from src.db.repositories import RepositoryContainer, CollectionRepository, DocumentRepository
 from src.broker.publisher import RabbitMQPublisher
 from src.db.database import get_db
 
@@ -60,11 +61,20 @@ async def get_s3_service(request: Request) -> S3Service:
     return request.app.state.s3_service
 
 
+async def get_repositories(
+    session: AsyncSession = Depends(get_db),
+) -> RepositoryContainer:
+    return RepositoryContainer(
+        collection_repo=CollectionRepository(session),
+        document_repo=DocumentRepository(session),
+    )
+
+
 PaginationDep = Annotated[Pagination, Depends(Pagination)]
 QdrantPaginationDep = Annotated[QdrantPagination, Depends(QdrantPagination)]
 RepoDep = Annotated[BaseVectorRepository, Depends(get_repo)]
 KeywordRepoDep = Annotated[BaseKeywordRepository, Depends(get_keyword_repo)]
-DatabaseDep = Annotated[AsyncSession, Depends(get_db)]
+DatabaseDep = Annotated[RepositoryContainer, Depends(get_repositories)]
 RAGDep = Annotated[RAGService, Depends(get_rag_service)]
 DocumentDep = Annotated[DocumentService, Depends(get_document_service)]
 CollectionDep = Annotated[CollectionService, Depends(get_collection_service)]
