@@ -1,16 +1,42 @@
 from typing import Optional, List, Any
-from pydantic import BaseModel, Field
-from src.rag.schemas.document import RAGDocument
+from uuid import UUID
+from pydantic import BaseModel, Field, ConfigDict
+from datetime import datetime
+from src.rag.schemas.document import RAGDocument, VectorCollectionSchema, KeywordIndexSchema
 
 
-class CollectionSchema(BaseModel):
+class CollectionResponseSchema(BaseModel):
+    id: UUID
     name: str
     size: Optional[int] = None
     distance: Optional[str] = None
-    
+    description: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
 
-class IndexSchema(BaseModel):
-    name: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CollectionDetailsResponseSchema(BaseModel):
+    vector_repo_info: VectorCollectionSchema
+    keyword_repo_info: KeywordIndexSchema
+
+
+class DocumentSchema(BaseModel):
+    filename: str
+    status: str
+    mime_type: str | None = None
+    size_bytes: int | None = None
+    error_message: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DocumentsResponseSchema(BaseModel):
+    items: list[DocumentSchema]
+    total: int
 
 
 class RAGResponseSchema(BaseModel):
@@ -24,3 +50,6 @@ class RAGResponseSchema(BaseModel):
     only_context: bool | None = Field(
         default=None, description="Флаг: возвращать ответ LLM или нет"
     )
+
+    class Config:
+        from_attributes = True

@@ -1,97 +1,97 @@
-from typing import List, Any, Optional
+from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Query, status
 from src.api.schemas.request_schemas import AddCollectionSchema, QuerySchema
-from src.api.schemas.response_schemas import CollectionSchema, RAGResponseSchema
-from src.api.deps import CollectionDep, RAGDep, QdrantPaginationDep, PaginationDep
+from src.api.schemas.response_schemas import CollectionResponseSchema, CollectionDetailsResponseSchema, DocumentSchema, DocumentsResponseSchema, RAGResponseSchema
+from src.api.deps import CollectionDep, RAGDep, PaginationDep, DatabaseDep
 
 router = APIRouter(prefix="/collections", tags=["Admin Collections"])
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, summary="Создать коллекцию во всех БД")
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=CollectionResponseSchema, summary="Создать коллекцию во всех БД")
 async def admin_create_collection(
     collection: AddCollectionSchema, 
     service: CollectionDep
 ):
-    await service.create_collection(collection.name, collection.size, collection.distance)
-    return {"message": f"Коллекция и индексы для '{collection.name}' успешно созданы"}
+    collection = await service.create_collection(
+        name=collection.name,
+        size=collection.size,
+        distance=collection.distance,
+        description=collection.description,
+    )
+    return collection
 
 
-@router.get("/", response_model=List[CollectionSchema], summary="Получить список коллекций")
+@router.get("/", response_model=List[CollectionResponseSchema], summary="Получить список коллекций")
 async def admin_get_collections(
-    service: CollectionDep,
-    include_parents: bool = Query(default=False, description="Включать ли служебные коллекции (*_parents)")    
+    service: CollectionDep   
 ):
-    return await service.get_collections(include_parents=include_parents)
+    return await service.get_collections()
 
 
-@router.get("/{collection_name}", summary="Детальная информация о коллекции (Vector repo + Keyword repo)")
+@router.get("/{collection_id}", response_model=CollectionDetailsResponseSchema, summary="Детальная информация о коллекции (Vector repo + Keyword repo)")
 async def admin_get_collection_details(
-    collection_name: str, 
+    collection_id: UUID,
     service: CollectionDep
 ):
-    return await service.get_collection_details(collection_name)
+    return await service.get_collection_details(collection_id)
 
 
-@router.delete("/{collection_name}/points", summary="Очистить содержимое коллекции")
+@router.delete("/{collection_id}/points", summary="Очистить содержимое коллекции")
 async def admin_clear_collection(
-    collection_name: str, 
+    collection_id: UUID,
     service: CollectionDep
 ):
-    await service.clear_collection(collection_name)
-    return {"message": f"Содержимое коллекции '{collection_name}' полностью очищено вместе с исходными файлами"}
+    await service.clear_collection(collection_id)
+    return {"message": f"Содержимое коллекции '{collection_id}' полностью очищено вместе с исходными файлами"}
 
 
-@router.delete("/{collection_name}", summary="Удалить коллекцию и исходные файлы")
+@router.delete("/{collection_id}", summary="Удалить коллекцию и исходные файлы")
 async def admin_delete_collection(
-    collection_name: str, 
+    collection_id: UUID,
     service: CollectionDep
 ):
-    await service.delete_collection(collection_name)
-    return {"message": f"Коллекция '{collection_name}' и её индексы полностью удалены"}
+    await service.delete_collection(collection_id)
+    return {"message": f"Коллекция '{collection_id}' и её индексы полностью удалены"}
 
 
-@router.get("/{collection_name}/documents", response_model=List[CollectionSchema], summary="Получить список документов из коллекции")
+@router.get("/{collection_id}/documents", response_model=DocumentsResponseSchema, summary="Получить список документов из коллекции")
 async def admin_get_collection_documents(
+    collection_id: UUID,
     service: CollectionDep,
     pagination: PaginationDep
 ):
-    return {"message": "Метод пока не готов"}
-
-
-@router.delete("/{collection_name}/documents/{document_id}", summary="Удалить документ и его исходный файл по document_id")
-async def admin_delete_document(
-    collection_name: str, 
-    document_id: UUID, 
-    service: CollectionDep
-):
-    await service.delete_document(collection_name, document_id)
-    return {"message": f"Документ '{document_id}' удален из коллекций"}
-
-
-@router.get("/{collection_name}/documents/{document_id}/chunks", summary="Получить чанки документа")
-async def admin_get_document_chunks(
-    collection_name: str,
-    document_id: UUID,
-    service: CollectionDep,
-    pagination: QdrantPaginationDep
-):
-    chunks, next_offset = await service.get_chunks(
-        collection_name=collection_name,
-        document_id=document_id,
-        limit=pagination.limit,
-        offset=pagination.offset,
-    )
+    documents, total = await service.get_documents(collection_id, pagination.size, pagination.offset)
     return {
-        "items": chunks,
-        "next_offset": next_offset,
+        "items": documents,
+        "total": total,
     }
 
 
-@router.post("/{collection_name}/search", response_model=RAGResponseSchema, summary="Запрос в документацию (RAG)")
-async def rag_query(collection_name: str, body: QuerySchema, rag_service: RAGDep):
+@router.get("/{collection_id}/documents/{document_id}", response_model=DocumentSchema, summary="Получить документ из коллекции")
+async def admin_get_collection_document(
+    collection_id: UUID,
+    document_id: UUID,
+    service: CollectionDep
+):
+    return await service.get_document(collection_id, document_id)
+
+
+@router.delete("/{collection_id}/documents/{document_id}", summary="Удалить документ и его исходный файл по document_id")
+async def admin_delete_document(
+    collection_id: UUID, 
+    document_id: UUID, 
+    service: CollectionDep
+):
+    await service.delete_document(collection_id, document_id)
+    return {"message": f"Документ '{document_id}' удален из коллекций {collection_id}"}
+
+
+@router.post("/{collection_id}/search", response_model=RAGResponseSchema, summary="Запрос в документацию (RAG)")
+async def rag_query(collection_id: UUID, body: QuerySchema, rag_service: RAGDep, repos: DatabaseDep):
     answer = await rag_service.run(
-        collection_name=collection_name,
-        **body.model_dump()
+        collection_id=collection_id,
+        **body.model_dump(),
+        repos=repos
     )
     return answer

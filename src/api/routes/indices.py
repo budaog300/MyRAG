@@ -2,7 +2,7 @@ from fastapi import APIRouter, Query
 from typing import List
 
 from src.api.deps import KeywordRepoDep
-from src.api.schemas import AddIndexSchema, IndexSchema
+from src.api.schemas import AddIndexSchema
 
 router = APIRouter(prefix="/keyword/indices", tags=["Keyword Repository"])
 
@@ -20,7 +20,7 @@ async def get_indices(
         default=False, 
         description="Включать ли служебные родительские коллекции (*_parents)"
     )
-) -> List[IndexSchema]:
+):
     return await repo.get_indices(include_parents=include_parents)
 
 

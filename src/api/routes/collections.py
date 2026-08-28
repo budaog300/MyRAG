@@ -2,14 +2,19 @@ from fastapi import APIRouter, Request, Depends, Query
 from typing import Annotated, List
 
 from src.api.deps import RepoDep
-from src.api.schemas import AddCollectionSchema, CollectionSchema
+from src.api.schemas import AddCollectionSchema
 
 router = APIRouter(prefix="/repo/collections", tags=["Vector Repository"])
 
 
 @router.post("/", summary="Создать коллекцию")
 async def create_collection(collection: AddCollectionSchema, repo: RepoDep):
-    await repo.create_collection(collection.name, collection.size, collection.distance)
+    await repo.create_collection(
+        name=collection.name,
+        size=collection.size,
+        distance=collection.distance,
+        description=collection.description,
+    )
     return {"message": f"Коллекция '{collection.name}' создана успешно"}
 
 
@@ -20,7 +25,7 @@ async def get_collections(
         default=False, 
         description="Включать ли служебные родительские коллекции (*_parents)"
     )
-) -> List[CollectionSchema]:
+):
     return await repo.get_collections(include_parents=include_parents)
 
 

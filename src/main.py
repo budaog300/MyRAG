@@ -34,7 +34,6 @@ async def lifespan(app: FastAPI):
     keyword_retriever = BM25Retriever(app.state.keyword_repo)
     hybrid_retriever = HybridRetriever([vector_retriever, keyword_retriever])
 
-    app.state.collection_service = CollectionService(app.state.repo, app.state.keyword_repo, app.state.s3_service)
     app.state.rag_service = RAGService(ai_service, hybrid_retriever, enricher)
     logger.info("Приложение запущено!")
 

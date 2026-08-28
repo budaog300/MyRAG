@@ -19,19 +19,19 @@ class AIService:
         self.config = config or settingsAI.build_ai_config()
 
         self.llm: Optional[BaseLLMProvider] = (
-            self._init_llm(config.llm) if config.llm and getattr(config.llm, "enabled", True) else None
+            self._init_llm(self.config.llm) if self.config.llm and getattr(self.config.llm, "enabled", True) else None
         )
 
         self.embedder: Optional[BaseEmbedderProvider] = (
-            self._init_embedder(config.embedder) if config.embedder and getattr(config.embedder, "enabled", True) else None
+            self._init_embedder(self.config.embedder) if self.config.embedder and getattr(self.config.embedder, "enabled", True) else None
         )
 
         self.vlm: Optional[BaseVLMProvider] = (
-            self._init_vlm(config.vlm) if config.vlm and getattr(config.vlm, "enabled", True) else None
+            self._init_vlm(self.config.vlm) if self.config.vlm and getattr(self.config.vlm, "enabled", True) else None
         )
 
         self.reranker: Optional[BaseRerankerProvider] = (
-            self._init_reranker(config.reranker) if config.reranker and getattr(config.reranker, "enabled", True) else None
+            self._init_reranker(self.config.reranker) if self.config.reranker and getattr(self.config.reranker, "enabled", True) else None
         )
 
     def _init_llm(self, config: ModelConfig) -> BaseLLMProvider:

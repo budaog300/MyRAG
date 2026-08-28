@@ -23,13 +23,16 @@ class RawDocumentSchema(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
-class CollectionSchema(BaseModel):
-    id: UUID
+class VectorCollectionSchema(BaseModel):
     name: str
     size: Optional[int] = None
     distance: Optional[str] = None
-    description: Optional[str] = None
+    status: Optional[str] = None
+    points_count: Optional[int] = None
 
 
-class IndexSchema(BaseModel):
+class KeywordIndexSchema(BaseModel):
     name: str
+    status: Optional[str] = None
+    points_count: Optional[int] = None
+

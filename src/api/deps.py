@@ -9,16 +9,6 @@ from src.broker.publisher import RabbitMQPublisher
 from src.db.database import get_db
 
 
-class QdrantPagination:
-    def __init__(
-        self,
-        limit: int = Query(default=5, ge=1, le=100),
-        offset: str | None = Query(default=None),
-    ):
-        self.limit = limit
-        self.offset = offset
-
-
 class Pagination:
     def __init__(
         self,
@@ -41,16 +31,11 @@ async def get_keyword_repo(request: Request) -> BaseKeywordRepository:
     return request.app.state.keyword_repo
 
 
-async def get_rag_service(request: Request) -> RAGService:
-    return request.app.state.rag_service
-
-
 async def get_document_service(request: Request) -> DocumentService:
     return request.app.state.document_service
 
 
-async def get_collection_service(request: Request) -> CollectionService:
-    return request.app.state.collection_service
+
 
 
 async def get_rabbitmq_publisher(request: Request) -> RabbitMQPublisher:
@@ -70,16 +55,20 @@ async def get_repositories(
     )
 
 
+async def get_rag_service(
+    request: Request,
+) -> RAGService:
+    return request.app.state.rag_service
+
+
 PaginationDep = Annotated[Pagination, Depends(Pagination)]
-QdrantPaginationDep = Annotated[QdrantPagination, Depends(QdrantPagination)]
 RepoDep = Annotated[BaseVectorRepository, Depends(get_repo)]
 KeywordRepoDep = Annotated[BaseKeywordRepository, Depends(get_keyword_repo)]
 DatabaseDep = Annotated[RepositoryContainer, Depends(get_repositories)]
-RAGDep = Annotated[RAGService, Depends(get_rag_service)]
 DocumentDep = Annotated[DocumentService, Depends(get_document_service)]
-CollectionDep = Annotated[CollectionService, Depends(get_collection_service)]
 RabbitMQPublisherDep = Annotated[RabbitMQPublisher, Depends(get_rabbitmq_publisher)]
 S3ServiceDep = Annotated[S3Service, Depends(get_s3_service)]
+RAGDep = Annotated[RAGService, Depends(get_rag_service)]
 
 
 def get_ingestion_service(
@@ -103,5 +92,20 @@ def get_health_service(
     )
 
 
+async def get_collection_service(
+    repos: DatabaseDep,
+    vector_repo: RepoDep,
+    keyword_repo: KeywordRepoDep,
+    s3_service: S3ServiceDep,
+) -> CollectionService:
+    return CollectionService(
+        repos=repos,
+        vector_repo=vector_repo,
+        keyword_repo=keyword_repo,
+        s3_service=s3_service,
+    )
+
+
 IngestionServiceDep = Annotated[DocumentIngestionService, Depends(get_ingestion_service)]
 HealthCheckDep = Annotated[HealthCheckService, Depends(get_health_service)]
+CollectionDep = Annotated[CollectionService, Depends(get_collection_service)]

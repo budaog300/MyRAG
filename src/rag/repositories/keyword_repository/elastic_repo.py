@@ -5,7 +5,7 @@ from elasticsearch.exceptions import BadRequestError, NotFoundError
 
 from src.core.config import settingsElastic
 from src.rag.repositories.keyword_repository.base import BaseKeywordRepository
-from src.rag.schemas.document import RAGDocument, IndexSchema
+from src.rag.schemas.document import RAGDocument, KeywordIndexSchema
 from src.core.exceptions.repo_exceptions import (
     CollectionAlreadyExistsError,
     CollectionNotFoundError,
@@ -42,22 +42,26 @@ class ElasticRepository(BaseKeywordRepository):
         except Exception as e:
             raise KeywordDatabaseError(str(e))
 
-    async def get_indices(self, include_parents: bool = False) -> List[IndexSchema]:
+    async def get_indices(self, include_parents: bool = False) -> List[KeywordIndexSchema]:
         try:
             indices = await self.client.cat.indices(format="json")
             if include_parents:
-                return [IndexSchema(name=index["index"]) for index in indices]
+                return [KeywordIndexSchema(name=index["index"]) for index in indices]
             return [
-                IndexSchema(name=index["index"])
+                KeywordIndexSchema(name=index["index"])
                 for index in indices
                 if not index["index"].endswith("_parents") and not index["index"].startswith(".")
             ]
         except Exception as e:
             raise KeywordDatabaseError(f"Ошибка получения списка индексов: {e}")
 
-    async def get_index_details(self, index: str):
+    async def get_index_details(self, index: str) -> KeywordIndexSchema:
         try:
-            return await self.client.count(index=index)
+            info = await self.client.count(index=index)
+            return KeywordIndexSchema(
+                name=index,
+                points_count=info["count"]
+            )
         except NotFoundError:
             raise CollectionNotFoundError(index)
         except Exception as e:

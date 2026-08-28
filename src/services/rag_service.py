@@ -1,9 +1,11 @@
 import logging
+from uuid import UUID
 from typing import Optional, Dict, Any, List, Union
 
 from src.rag.retrievers import BaseRetriever
 from src.services.ai_service import AIService
 from src.rag.repositories.context_enricher import ContextEnricher
+from src.db.repositories import RepositoryContainer
 from src.core.exceptions import BaseAppException
 from src.core.exceptions.rag_service_exceptions import (
     ContextEnrichmentError,
@@ -11,8 +13,7 @@ from src.core.exceptions.rag_service_exceptions import (
     NoRelevantDocumentsFoundError,
     RAGException,
 )
-from src.core.exceptions.ai_service_exceptions import AIServiceInitializationError
-from src.core.exceptions.repo_exceptions import InvalidCollectionNameError
+from src.core.exceptions.repo_exceptions import CollectionNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -121,21 +122,26 @@ class RAGService:
     async def run(
         self,
         query: str,
-        collection_name: str,
+        collection_id: UUID,
+        repos: RepositoryContainer,
         retrieve_limit: int = 30,
         merge_limit: int = 10,
         top_k: int = 5,
         temperature: float = 0.3,
         max_tokens: int = 1024,
-        only_context: bool = True,
+        only_context: bool = True        
     ) -> Dict[str, Any]:
         if not query or not query.strip():
             raise EmptyQueryError()
 
-        if not collection_name or not collection_name.strip():
-            raise InvalidCollectionNameError(collection_name=collection_name)
+        collection = await repos.collection_repo.get_by_id(collection_id)
 
-        logger.info(f"Запуск RAG пайплайна для коллекции '{collection_name}'")
+        if collection is None:
+            raise CollectionNotFoundError(str(collection_id))
+
+        collection_name = str(collection.id)
+
+        logger.info(f"Запуск RAG пайплайна для коллекции '{collection.name}' (id={collection.id})'")
 
         result = await self._full_step(
             query=query.strip(),

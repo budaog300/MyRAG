@@ -7,12 +7,21 @@ from src.db.repositories.base import BaseRepository
 
 
 class CollectionRepository(BaseRepository):
-    async def create(self, name: str) -> CollectionModel:
-        collection = CollectionModel(name=name)
-
+    async def create(
+        self,
+        name: str,
+        size: int,
+        distance: str,
+        description: str | None = None,
+    ) -> CollectionModel:
+        collection = CollectionModel(
+            name=name,
+            size=size,
+            distance=distance,
+            description=description,
+        )
         self.session.add(collection)
         await self.session.flush()
-
         return collection
 
     async def get_by_id(

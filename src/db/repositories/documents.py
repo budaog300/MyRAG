@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from src.db.models import DocumentModel, DocumentStatus
 from src.db.repositories.base import BaseRepository
@@ -34,11 +34,13 @@ class DocumentRepository(BaseRepository):
 
     async def get_by_id(
         self,
+        collection_id: UUID,
         document_id: UUID,
     ) -> DocumentModel | None:
         result = await self.session.execute(
             select(DocumentModel).where(
-                DocumentModel.id == document_id
+                DocumentModel.id == document_id,
+                DocumentModel.collection_id == collection_id,
             )
         )
 
@@ -56,17 +58,36 @@ class DocumentRepository(BaseRepository):
 
         return result.scalar_one_or_none()
 
-    async def get_by_collection_id(
+    async def get_all(
         self,
         collection_id: UUID,
+        limit: int = 5,
+        offset: int = 0,
+
     ) -> list[DocumentModel]:
-        result = await self.session.execute(
+        query = (
             select(DocumentModel)
             .where(DocumentModel.collection_id == collection_id)
             .order_by(DocumentModel.created_at.desc())
         )
+        if limit is not None:
+            query = query.limit(limit)
+        if offset:
+            query = query.offset(offset)
+
+        result = await self.session.execute(query)
 
         return list(result.scalars().all())
+
+    async def count_by_collection_id(
+        self,
+        collection_id: UUID,
+    ) -> int:
+        result = await self.session.execute(
+            select(func.count(DocumentModel.id))
+            .where(DocumentModel.collection_id == collection_id)
+        )
+        return result.scalar_one()
 
     async def update_status(
         self,

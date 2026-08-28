@@ -1,6 +1,6 @@
 import hashlib
 from uuid import UUID, uuid4
-from typing import Any
+from typing import Optional
 from pydantic import BaseModel, Field
 
 
@@ -18,6 +18,7 @@ class AddCollectionSchema(BaseModel):
     name: str = Field(..., min_length=5, description="Введите название коллекции")
     size: int = Field(..., ge=1, description="Введите размер векторной размерности")
     distance: str = Field(..., min_length=1, description="Введите вид расстояния")
+    description: str = Field(default=None, min_length=1, description="Введите описание коллекции")
 
 
 class AddIndexSchema(BaseModel):

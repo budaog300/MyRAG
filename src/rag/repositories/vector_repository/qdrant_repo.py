@@ -7,7 +7,7 @@ from qdrant_client.models import Distance, VectorParams, PointStruct, Document
 
 from src.core.config import settingsQdrant
 from src.rag.repositories.vector_repository.base import BaseVectorRepository
-from src.rag.schemas.document import CollectionSchema, RAGDocument
+from src.rag.schemas.document import VectorCollectionSchema, RAGDocument
 from src.rag.ai.providers import BaseEmbedderProvider
 from src.core.exceptions.repo_exceptions import (
     CollectionAlreadyExistsError,
@@ -53,22 +53,29 @@ class QdrantRepository(BaseVectorRepository):
         except Exception as e:
             raise VectorDatabaseError(f"Неизвестная ошибка при создании коллекции: {e}")
 
-    async def get_collections(self, include_parents: bool = False) -> List[CollectionSchema]:
+    async def get_collections(self, include_parents: bool = False) -> List[VectorCollectionSchema]:
         try:
             result = await self.client.get_collections()
             if include_parents:
-                return [CollectionSchema(name=col.name) for col in result.collections]
+                return [VectorCollectionSchema(name=col.name) for col in result.collections]
             return [
-                CollectionSchema(name=col.name)
+                VectorCollectionSchema(name=col.name)
                 for col in result.collections
                 if not col.name.endswith("_parents")
             ]
         except Exception as e:
             raise VectorDatabaseError(f"Ошибка при получении списка коллекций: {e}")
 
-    async def get_collection_details(self, collection_name: str):
+    async def get_collection_details(self, collection_name: str) -> VectorCollectionSchema:
         try:
-            return await self.client.get_collection(collection_name)
+            info = await self.client.get_collection(collection_name)
+            return VectorCollectionSchema(
+                name=collection_name,
+                status=info.status,
+                points_count=info.points_count or 0,
+                size=info.config.params.vectors.size,
+                distance=info.config.params.vectors.distance
+            )
         except UnexpectedResponse as e:
             if e.status_code == 404:
                 raise CollectionNotFoundError(collection_name)
