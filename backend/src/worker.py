@@ -22,8 +22,6 @@ async def main():
     repo = QdrantRepository(ai_service.embedder)
     keyword_repo = ElasticRepository()
 
-    repos = RepositoryContainer()
-
     logger.info("Инициализируем конвертеры...")
     docling_converter = DoclingDocumentConverter(ai_service)
     text_converter = TextDocumentConverter()

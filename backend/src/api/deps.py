@@ -35,9 +35,6 @@ async def get_document_service(request: Request) -> DocumentService:
     return request.app.state.document_service
 
 
-
-
-
 async def get_rabbitmq_publisher(request: Request) -> RabbitMQPublisher:
     return request.app.state.publisher
 
@@ -74,8 +71,9 @@ RAGDep = Annotated[RAGService, Depends(get_rag_service)]
 def get_ingestion_service(
     s3_service: S3ServiceDep,
     broker: RabbitMQPublisherDep,
+    db_repo: DatabaseDep
 ) -> DocumentIngestionService:
-    return DocumentIngestionService(s3_service=s3_service, broker=broker)
+    return DocumentIngestionService(s3_service=s3_service, broker=broker, db_repo=db_repo)
 
 
 def get_health_service(
@@ -83,26 +81,28 @@ def get_health_service(
     keyword_repo: KeywordRepoDep,
     s3_service: S3ServiceDep,
     broker: RabbitMQPublisherDep,
+    db_repo: DatabaseDep
 ) -> HealthCheckService:
     return HealthCheckService(
-        repo=repo,
+        repo=repo,        
         keyword_repo=keyword_repo,
         s3_service=s3_service,
-        broker=broker
+        broker=broker,
+        db_repo=db_repo
     )
 
 
 async def get_collection_service(
-    repos: DatabaseDep,
+    db_repo: DatabaseDep,
     vector_repo: RepoDep,
     keyword_repo: KeywordRepoDep,
     s3_service: S3ServiceDep,
 ) -> CollectionService:
     return CollectionService(
-        repos=repos,
+        db_repo=db_repo,
         vector_repo=vector_repo,
         keyword_repo=keyword_repo,
-        s3_service=s3_service,
+        s3_service=s3_service
     )
 
 

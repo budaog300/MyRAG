@@ -16,11 +16,11 @@ class DocumentIngestionService:
             self,
             s3_service: S3Service,
             broker: RabbitMQPublisher,
-            repos: RepositoryContainer
+            db_repo: RepositoryContainer
     ):
         self.s3_service = s3_service
         self.broker = broker
-        self.repos = repos
+        self.db_repo = db_repo
 
     async def process_incoming_files(
         self,
@@ -32,7 +32,7 @@ class DocumentIngestionService:
         parent_chunk_overlap: int | None = None,
     ) -> list[str]:
         """Обрабатывает загружаемые файлы, отправляет в S3 и публикует задачи в RabbitMQ."""
-        collection = await self.repos.collection_repo.get_by_id(collection_id)
+        collection = await self.db_repo.collection_repo.get_by_id(collection_id)
 
         if collection is None:
             raise CollectionNotFoundError(str(collection_id))
@@ -48,14 +48,14 @@ class DocumentIngestionService:
             document_id = uuid4()
             s3_key = f"raw_documents/{document_id}{file_ext}"
 
-            document = await self.repos.document_repo.create(
+            document = await self.db_repo.document_repo.create(
                 id=document_id,
                 collection_id=collection_id,
                 filename=file.filename or "unknown",
                 mime_type=file.content_type,
                 size_bytes=len(file_content),
             )
-            await self.repos.document_repo.session.commit()
+            await self.db_repo.document_repo.session.commit()
 
             await self.s3_service.upload_file(
                 file_data=file_content,

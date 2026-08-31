@@ -17,7 +17,7 @@ class CollectionResponseSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class CollectionDetailsResponseSchema(BaseModel):
+class CollectionDetailsResponseSchema(CollectionResponseSchema):
     vector_repo_info: VectorCollectionSchema
     keyword_repo_info: KeywordIndexSchema
 

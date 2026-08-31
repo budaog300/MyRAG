@@ -24,12 +24,12 @@ class CollectionService:
             vector_repo: BaseVectorRepository, 
             keyword_repo: BaseKeywordRepository, 
             s3_service: S3Service,
-            repos: RepositoryContainer,
+            db_repo: RepositoryContainer,
         ):
         self.vector_repo = vector_repo
         self.keyword_repo = keyword_repo
         self.s3_service = s3_service
-        self.repos = repos
+        self.db_repo = db_repo
 
     def _validate_collection_name(self, name: str) -> None:
         """Проверяет валидность названия коллекции."""
@@ -54,14 +54,14 @@ class CollectionService:
 
         logger.info(f"Создание коллекции '{name}' (size={size}, distance={distance})")
 
-        collection = await self.repos.collection_repo.create(
+        collection = await self.db_repo.collection_repo.create(
             name=name,
             size=size,
             distance=distance,
             description=description,
         )
 
-        await self.repos.collection_repo.session.commit()
+        await self.db_repo.collection_repo.session.commit()
 
         collection_name = str(collection.id)
        
@@ -79,7 +79,7 @@ class CollectionService:
 
     async def get_collections(self) -> List[CollectionModel]:
         try:
-            collections = await self.repos.collection_repo.get_all()
+            collections = await self.db_repo.collection_repo.get_all()
             return collections
         except BaseAppException:
             raise
@@ -93,7 +93,7 @@ class CollectionService:
 
     async def get_collection_details(self, collection_id: UUID) -> Dict[str, Any]:
         try:
-            collection = await self.repos.collection_repo.get_by_id(collection_id)
+            collection = await self.db_repo.collection_repo.get_by_id(collection_id)
             
             if collection is None:
                 raise CollectionNotFoundError(collection_name)
@@ -127,12 +127,12 @@ class CollectionService:
             ) from exc
 
     async def clear_collection(self, collection_id: UUID) -> None:
-        collection = await self.repos.collection_repo.get_by_id(collection_id)
+        collection = await self.db_repo.collection_repo.get_by_id(collection_id)
         if collection is None:
             raise CollectionNotFoundError(collection_id)
         logger.info(f"Очистка содержимого коллекции '{collection.name}'")
         try:
-            documents = await self.repos.document_repo.get_all(collection.id)
+            documents = await self.db_repo.document_repo.get_all(collection.id)
             collection_name = str(collection_id)
             await asyncio.gather(
                 self.vector_repo.clear_collection(collection_name),
@@ -143,8 +143,8 @@ class CollectionService:
                 ]
             )
             for document in documents:
-                await self.repos.document_repo.delete(document)
-            await self.repos.document_repo.session.commit()
+                await self.db_repo.document_repo.delete(document)
+            await self.db_repo.document_repo.session.commit()
             logger.info(f"Коллекция '{collection.name}' очищена. Удалено S3 файлов: {len(documents)}")
         except BaseAppException:
             raise
@@ -153,12 +153,12 @@ class CollectionService:
             raise CollectionOperationError(operation="clear", collection_name=collection.name, details=str(exc)) from exc
 
     async def delete_collection(self, collection_id: UUID) -> None:
-        collection = await self.repos.collection_repo.get_by_id(collection_id)
+        collection = await self.db_repo.collection_repo.get_by_id(collection_id)
         if collection is None:
             raise CollectionNotFoundError(collection_id)
         logger.info(f"Удаление коллекции '{collection.name}")
         try:
-            documents = await self.repos.document_repo.get_all(collection.id)
+            documents = await self.db_repo.document_repo.get_all(collection.id)
             collection_name = str(collection_id)
             await asyncio.gather(
                 self.vector_repo.delete_collection(collection_name),
@@ -168,8 +168,8 @@ class CollectionService:
                     for document in documents
                 ]
             )
-            await self.repos.collection_repo.delete(collection)
-            await self.repos.collection_repo.session.commit()
+            await self.db_repo.collection_repo.delete(collection)
+            await self.db_repo.collection_repo.session.commit()
             
             logger.info(f"Коллекция '{collection.name}' очищена. Удалено S3 файлов: {len(documents)}")
         except BaseAppException:
@@ -185,17 +185,17 @@ class CollectionService:
         offset: int = 0,
     ) -> list[DocumentModel]:
         try:
-            collection = await self.repos.collection_repo.get_by_id(collection_id)
+            collection = await self.db_repo.collection_repo.get_by_id(collection_id)
 
             if collection is None:
                 raise CollectionNotFoundError(str(collection_id))
 
-            documents = await self.repos.document_repo.get_all(
+            documents = await self.db_repo.document_repo.get_all(
                 collection_id=collection_id,
                 limit=limit,
                 offset=offset,
             )
-            total = await self.repos.document_repo.count_by_collection_id(
+            total = await self.db_repo.document_repo.count_by_collection_id(
                 collection_id
             )
             return documents, total
@@ -215,12 +215,12 @@ class CollectionService:
         document_id: UUID,
     ) -> DocumentModel:
         try:
-            collection = await self.repos.collection_repo.get_by_id(collection_id)
+            collection = await self.db_repo.collection_repo.get_by_id(collection_id)
 
             if collection is None:
                 raise CollectionNotFoundError(str(collection_id))
 
-            document = await self.repos.document_repo.get_by_id(
+            document = await self.db_repo.document_repo.get_by_id(
                 collection_id=collection_id,
                 document_id=document_id,
             )
@@ -242,13 +242,13 @@ class CollectionService:
     async def delete_document(
         self, collection_id: UUID, document_id: UUID,
     ) -> None:
-        collection = await self.repos.collection_repo.get_by_id(collection_id)
+        collection = await self.db_repo.collection_repo.get_by_id(collection_id)
         if collection is None:
             raise CollectionNotFoundError(collection_id)
 
         logger.info(f"Удаление документов с document_id='{document_id}' из коллекции '{collection.name}'")
         try:
-            document = await self.repos.document_repo.get_by_id(document_id)
+            document = await self.db_repo.document_repo.get_by_id(document_id)
             if document is None or document.collection_id != collection.id:
                 raise DocumentNotFoundError(str(document_id), str(collection_id))
             collection_name = str(collection_id)
@@ -265,8 +265,8 @@ class CollectionService:
                 ),
                 self.s3_service.delete_file(document.s3_key),
             )
-            await self.repos.document_repo.delete(document)
-            await self.repos.document_repo.session.commit()
+            await self.db_repo.document_repo.delete(document)
+            await self.db_repo.document_repo.session.commit()
 
             logger.info(f"Документ '{document_id}' успешно удален из коллекции '{collection_name}'.")
 

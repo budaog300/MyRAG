@@ -1,4 +1,3 @@
-# src/db/models/document.py
 import enum
 import uuid
 from typing import Optional
@@ -19,7 +18,7 @@ class DocumentStatus(str, enum.Enum):
 class CollectionModel(BaseEntity):
     __tablename__ = "collections"
 
-    name: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
+    name: Mapped[str] = mapped_column(String, index=True, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     size: Mapped[Optional[str]] = mapped_column(Integer, default=1024, nullable=False)
     distance: Mapped[Optional[str]] = mapped_column(String, default="COSINE", nullable=False)

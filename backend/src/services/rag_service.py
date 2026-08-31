@@ -1,8 +1,9 @@
 import logging
 from uuid import UUID
-from typing import Optional, Dict, Any, List, Union
+from typing import Optional, Dict, Any, List, Union, Tuple
 
 from src.rag.retrievers import BaseRetriever
+from src.rag.schemas.document import RAGDocument
 from src.services.ai_service import AIService
 from src.rag.repositories.context_enricher import ContextEnricher
 from src.db.repositories import RepositoryContainer
@@ -39,7 +40,7 @@ class RAGService:
         system_prompt: Optional[str] = None,
         only_context: bool = True,
         **kwargs,
-    ) -> Union[str | List[Any]]:
+    ) -> Tuple[Optional[str], List[RAGDocument]]:
         try:
             docs = await self.retriever.retrieve(
                 query,
@@ -93,9 +94,9 @@ class RAGService:
         final_docs = docs[:top_k]
         if only_context:
             logger.info(f"Возврат найденных чанков без вызова LLM (only_context={only_context})")
-            return final_docs
+            return None, final_docs
 
-        context_text = "\n\n---\n\n".join([doc.content for doc in docs[:top_k]])
+        context_text = "\n\n---\n\n".join([doc.content for doc in final_docs])
 
         prompt = (
             f"Используй следующий контекст для ответа на вопрос.\n\n"
@@ -117,7 +118,7 @@ class RAGService:
             logger.error(f"Ошибка генерации ответа через LLM: {exc}", exc_info=True)
             raise RAGException(message=f"Ошибка при генерации ответа LLM: {exc}") from exc
 
-        return answer
+        return answer, final_docs
 
     async def run(
         self,
@@ -139,13 +140,11 @@ class RAGService:
         if collection is None:
             raise CollectionNotFoundError(str(collection_id))
 
-        collection_name = str(collection.id)
+        logger.info(f"Запуск RAG пайплайна для коллекции '{collection.name}' (id={str(collection.id)})'")
 
-        logger.info(f"Запуск RAG пайплайна для коллекции '{collection.name}' (id={collection.id})'")
-
-        result = await self._full_step(
+        answer, documents = await self._full_step(
             query=query.strip(),
-            collection_name=collection_name.strip(),
+            collection_name=collection.name.strip(),
             retrieve_limit=retrieve_limit,
             merge_limit=merge_limit,
             top_K=top_k,
@@ -155,8 +154,8 @@ class RAGService:
         )
 
         return {
-            "answer": result if not only_context else None,
-            "documents": result if only_context else [],
-            "count": len(result) if only_context else 0,
+            "answer": answer,
+            "documents": documents,
+            "count": len(documents),
             "only_context": only_context
         }
