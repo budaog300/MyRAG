@@ -3,5 +3,3 @@ from src.rag.components.converters.docling_converter import DoclingDocumentConve
 from src.rag.components.converters.text_converter import TextDocumentConverter
 from src.rag.components.converters.vlm_image_converter import VLMImageConverter
 from src.rag.components.converters.excel_converter import ExcelConverter
-from src.rag.components.converters.rapid_image_converter import RapidOCRImageConverter
-from src.rag.components.converters.tesseract_image_converter import TesseractImageConverter

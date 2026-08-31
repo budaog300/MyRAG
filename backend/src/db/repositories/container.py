@@ -8,3 +8,6 @@ from src.db.repositories.documents import DocumentRepository
 class RepositoryContainer:
     collection_repo: CollectionRepository
     document_repo: DocumentRepository
+
+    async def ping(self) -> bool:
+        return await self.collection_repo.ping()
