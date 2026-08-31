@@ -1,0 +1,36 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+:root {
+  color-scheme: dark;
+  --background: #070a14;
+  --foreground: #e5e7ff;
+  --card: #0b1021;
+  --card-foreground: #f8fafc;
+  --primary: #a855f7;
+  --primary-foreground: #ffffff;
+  --secondary: #14b8a6;
+  --secondary-foreground: #0f172a;
+  --muted: #1f2937;
+  --muted-foreground: #cbd5f5;
+  --border: #1f2a42;
+  --accent: #6366f1;
+  --ring: #312e81;
+  --radius: 1rem;
+  font-family: "Geist Variable", system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, rgba(99, 102, 241, 0.25), transparent 45%),
+    radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.35), transparent 35%),
+    #030712;
+  min-height: 100vh;
+  color: var(--foreground);
+}
+
+#root {
+  min-height: 100vh;
+}
