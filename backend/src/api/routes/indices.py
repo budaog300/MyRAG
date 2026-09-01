@@ -18,7 +18,7 @@ async def get_indices(
     repo: KeywordRepoDep,
     include_parents: bool = Query(
         default=False, 
-        description="Включать ли служебные родительские коллекции (*_parents)"
+        description="Включить служебные родительские коллекции (*_parents)"
     )
 ):
     return await repo.get_indices(include_parents=include_parents)

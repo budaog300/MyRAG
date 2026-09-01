@@ -1,6 +1,7 @@
 import logging
 from typing import AsyncGenerator
 import aioboto3
+import asyncio
 from botocore.exceptions import ClientError
 from src.core.config import settingsS3
 from src.core.exceptions import BaseAppException
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 class S3ServiceError(BaseAppException):
     """Ошибка работы с S3 хранилищем."""
     def __init__(self, message: str = "Ошибка хранилища S3", status_code: int = 500):
-        super().__init__(message=message, status_code=status_code)
+        super().__init__(message=message, status_code=status_code)        
 
 
 class S3Service:
@@ -21,6 +22,7 @@ class S3Service:
         self.access_key = settingsS3.ACCESS_KEY
         self.secret_key = settingsS3.SECRET_KEY
         self.bucket_name = settingsS3.BUCKET_NAME
+        self._delete_semaphore = asyncio.Semaphore(20)
 
     def _get_client(self):
         return self.session.client(
@@ -71,7 +73,7 @@ class S3Service:
                 logger.error("Ошибка скачивания файла %s из S3: %s", object_key, e, exc_info=True)
                 raise S3ServiceError(f"Не удалось прочитать файл из хранилища: {e}")
 
-    async def delete_file(self, object_key: str) -> None:
+    async def _delete_file(self, object_key: str) -> None:
         """Удаляет файл из S3."""
         async with self._get_client() as s3:
             try:
@@ -80,6 +82,10 @@ class S3Service:
             except Exception as e:
                 logger.error("Ошибка удаления файла %s из S3: %s", object_key, e, exc_info=True)
                 raise S3ServiceError(f"Не удалось удалить файл из хранилища: {e}")
+
+    async def delete_file(self, object_key: str) -> None:
+        async with self._delete_semaphore:
+            await self._delete_file(object_key)
 
     async def ping(self) -> bool:
         try:

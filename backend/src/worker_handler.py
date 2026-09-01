@@ -1,4 +1,7 @@
 import logging
+import asyncio
+import tempfile
+from pathlib import Path
 from src.rag.schemas.ingest import IngestDataSchema
 from src.rag.schemas.document import RawDocumentSchema
 from src.services import S3Service, DocumentService
@@ -19,15 +22,27 @@ async def process_document_task(
 
     try:
         await repos.document_repo.update_status(
+            collection_id=task.collection_id,
             document_id=task.document_id,
             status=DocumentStatus.PROCESSING
         )
         await repos.document_repo.session.commit()
 
         file_bytes = await s3_service.download_file(object_key=task.s3_key)
+        logger.info("Файл %s скачан из S3, размер: %d bytes", task.document_id, len(file_bytes))
+
+        # ---------- Создаём временный файл в отдельном потоке -----------
+        suffix = Path(task.original_filename).suffix 
+        def create_temp_file() -> Path:
+            with tempfile.NamedTemporaryFile(mode="wb", suffix=suffix, delete=False) as temp_file:
+                temp_file.write(file_bytes) 
+                return Path(temp_file.name)
+        temp_file_path = await asyncio.to_thread(create_temp_file)
+        logger.info("Создан временный файл %s для документа %s", temp_file_path, task.document_id)
+        # ----------------------------------------------------------------
 
         raw_doc = RawDocumentSchema(
-            source=task.original_filename,
+            source=str(temp_file_path),
             file_bytes=file_bytes,
             document_id=task.document_id,
             content_hash=task.content_hash,
@@ -44,6 +59,7 @@ async def process_document_task(
         )
 
         await repos.document_repo.update_status(
+            collection_id=task.collection_id,
             document_id=task.document_id,
             status=DocumentStatus.READY
         )
@@ -52,9 +68,10 @@ async def process_document_task(
         logger.info("Документ %s успешно обработан и заиндексирован", task.document_id)
     except Exception as exc:
         await repos.document_repo.update_status(
-            task.document_id,
-            DocumentStatus.FAILED,
-            error_message=str(exc),
+            collection_id=task.collection_id,
+            document_id=task.document_id,
+            status=DocumentStatus.FAILED,
+            error_message=str(exc)
         )
         await repos.document_repo.session.commit()
 
@@ -63,3 +80,10 @@ async def process_document_task(
             task.document_id,
         )
         raise
+    finally:
+        if temp_file_path is not None: 
+            try:
+                await asyncio.to_thread(temp_file_path.unlink, missing_ok=True) 
+                logger.debug("Временный файл %s удалён", temp_file_path) 
+            except Exception: 
+                logger.exception("Не удалось удалить временный файл %s", temp_file_path)

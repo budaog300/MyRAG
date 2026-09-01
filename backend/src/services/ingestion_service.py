@@ -3,7 +3,7 @@ import hashlib
 from uuid import uuid4, UUID
 from fastapi import UploadFile
 from src.broker.publisher import RabbitMQPublisher
-from src.rag.schemas.ingest import IngestDataSchema
+from src.rag.schemas.ingest import IngestDataSchema, IngestionConfigParams
 from src.services.s3_service import S3Service
 from src.db.repositories import RepositoryContainer
 from src.core.exceptions.repo_exceptions import CollectionNotFoundError
@@ -25,17 +25,13 @@ class DocumentIngestionService:
     async def process_incoming_files(
         self,
         files: list[UploadFile],
-        collection_id: UUID,
-        chunk_size: int | None = None,
-        chunk_overlap: int | None = None,
-        parent_chunk_size: int | None = None,
-        parent_chunk_overlap: int | None = None,
+        config: IngestionConfigParams
     ) -> list[str]:
         """Обрабатывает загружаемые файлы, отправляет в S3 и публикует задачи в RabbitMQ."""
-        collection = await self.db_repo.collection_repo.get_by_id(collection_id)
+        collection = await self.db_repo.collection_repo.get_by_id(config.collection_id)
 
         if collection is None:
-            raise CollectionNotFoundError(str(collection_id))
+            raise CollectionNotFoundError(str(config.collection_id))
 
         await self.s3_service.ensure_bucket_exists()
         queued_doc_ids: list[str] = []
@@ -50,8 +46,9 @@ class DocumentIngestionService:
 
             document = await self.db_repo.document_repo.create(
                 id=document_id,
-                collection_id=collection_id,
+                collection_id=config.collection_id,
                 filename=file.filename or "unknown",
+                s3_key=s3_key,
                 mime_type=file.content_type,
                 size_bytes=len(file_content),
             )
@@ -69,10 +66,10 @@ class DocumentIngestionService:
                 s3_key=s3_key,
                 content_hash=content_hash,
                 original_filename=file.filename or "unknown",
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-                parent_chunk_size=parent_chunk_size,
-                parent_chunk_overlap=parent_chunk_overlap
+                chunk_size=config.chunk_size,
+                chunk_overlap=config.chunk_overlap,
+                parent_chunk_size=config.parent_chunk_size,
+                parent_chunk_overlap=config.parent_chunk_overlap
             )
 
             await self.broker.publish(task_data)

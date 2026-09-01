@@ -1,5 +1,3 @@
-import hashlib
-from uuid import UUID, uuid4
 from typing import Optional
 from pydantic import BaseModel, Field
 
@@ -11,7 +9,7 @@ class QuerySchema(BaseModel):
     top_k: int = Field(default=5, ge=1, description="Количество итоговых документов после реранкинга для передачи в LLM")
     temperature: float = Field(default=0.3, ge=0.0, le=2.0, description="Температура генерации LLM (от 0.0 до 2.0)")
     max_tokens: int = Field(default=1024, ge=1, description="Максимальное количество токенов в ответе LLM")
-    only_context: bool = Field(default=True, description="Если True, возвращает только найденные чанки без вызова LLM")
+    only_context: bool = Field(default=False, description="Если True, возвращает только найденные чанки без вызова LLM")
 
 
 class AddCollectionSchema(BaseModel):

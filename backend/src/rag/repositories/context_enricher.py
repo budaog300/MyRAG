@@ -39,17 +39,35 @@ class ContextEnricher:
 
         parents_map = {p.id: p for p in parents}
 
+        enriched_docs = []
+        seen_parent_ids = set()
+
         for doc in docs:
             p_id = doc.metadata.get("parent_id")
+
             if not p_id:
+                enriched_docs.append(doc)
+                continue
+
+            if p_id in seen_parent_ids:
                 continue
 
             parent_doc = parents_map.get(p_id)
+
             if not parent_doc:
-                raise ParentDocumentNotFoundError(parent_id=p_id, collection_name=collection_name)
+                raise ParentDocumentNotFoundError(
+                    parent_id=p_id,
+                    collection_name=collection_name
+                )
 
             doc.content = parent_doc.content
-            doc.metadata.update(parent_doc.metadata)
+            doc.metadata = {
+                **parent_doc.metadata,
+                **doc.metadata,
+            }
             doc.is_parent = getattr(parent_doc, "is_parent", True)
 
-        return docs
+            seen_parent_ids.add(p_id)
+            enriched_docs.append(doc)
+
+        return enriched_docs

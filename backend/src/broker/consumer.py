@@ -28,12 +28,12 @@ class RabbitMQConsumer(BaseRabbitMQ):
 
             async with queue.iterator() as queue_iter:
                 async for message in queue_iter:
-                    logger.info(f"Прочитано сообщение [{message.id}] из очереди {queue_name}")
+                    logger.info(f"Прочитано сообщение [{message.message_id}] из очереди {queue_name}")
 
                     try:
                         in_obj = obj.model_validate_json(message.body.decode())
                     except (ValidationError, Exception) as e:
-                        logger.error(f"Ошибка валидации/декодирования сообщения {message.id}: {e}")
+                        logger.error(f"Ошибка валидации/декодирования сообщения [{message.message_id}] из очереди {queue_name}: {e}")
                         await message.nack(requeue=False)
                         continue
 
@@ -41,10 +41,10 @@ class RabbitMQConsumer(BaseRabbitMQ):
                         await func(in_obj)
                         await message.ack()
                     except BaseAppException as e:
-                        logger.error(f"Доменная ошибка при обработке сообщения {message.id}: {e}")
+                        logger.error(f"Доменная ошибка при обработке сообщения {message.message_id}: {e}")
                         await message.nack(requeue=False)
                     except Exception as e:
-                        logger.error(f"Системная ошибка при обработке сообщения {message.id}: {e}")
+                        logger.error(f"Системная ошибка при обработке сообщения {message.message_id}: {e}")
                         await message.nack(requeue=True)
 
         except aio_pika.exceptions.CONNECTION_EXCEPTIONS:

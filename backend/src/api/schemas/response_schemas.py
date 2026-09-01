@@ -18,11 +18,12 @@ class CollectionResponseSchema(BaseModel):
 
 
 class CollectionDetailsResponseSchema(CollectionResponseSchema):
-    vector_repo_info: VectorCollectionSchema
-    keyword_repo_info: KeywordIndexSchema
+    vector_repo_info: VectorCollectionSchema | None = None
+    keyword_repo_info: KeywordIndexSchema | None = None
 
 
 class DocumentSchema(BaseModel):
+    id: UUID
     filename: str
     status: str
     mime_type: str | None = None

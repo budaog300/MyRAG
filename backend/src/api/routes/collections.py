@@ -23,7 +23,7 @@ async def get_collections(
     repo: RepoDep, 
     include_parents: bool = Query(
         default=False, 
-        description="Включать ли служебные родительские коллекции (*_parents)"
+        description="Включить служебные родительские коллекции (*_parents)"
     )
 ):
     return await repo.get_collections(include_parents=include_parents)

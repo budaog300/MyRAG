@@ -40,7 +40,6 @@ class HierarchicalMarkdownSplitter(BaseDocumentSplitter):
         self.parent_chunk_overlap = parent_chunk_overlap
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
-        self.headers_to_split_on = headers_to_split_on
         self.delimiter = delimiter
 
     @staticmethod
@@ -82,10 +81,10 @@ class HierarchicalMarkdownSplitter(BaseDocumentSplitter):
         parent_chunk_overlap: int | None = None,
         **kwargs
     ) -> List[RAGDocument]:
-        actual_chunk_size = chunk_size or self.chunk_size
-        actual_chunk_overlap = chunk_overlap or self.chunk_overlap
-        actual_parent_chunk_size = parent_chunk_size or self.parent_chunk_size
-        actual_parent_chunk_overlap = parent_chunk_overlap or self.parent_chunk_overlap
+        actual_chunk_size = chunk_size if chunk_size is not None else self.chunk_size            
+        actual_chunk_overlap = chunk_overlap if chunk_overlap is not None else self.chunk_overlap            
+        actual_parent_chunk_size = parent_chunk_size if parent_chunk_size is not None else self.parent_chunk_size          
+        actual_parent_chunk_overlap = parent_chunk_overlap if parent_chunk_overlap is not None else self.parent_chunk_overlap            
 
         self._validate_config(
             actual_chunk_size, 

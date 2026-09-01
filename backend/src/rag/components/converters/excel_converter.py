@@ -125,7 +125,7 @@ class ExcelConverter(BaseDocumentConverter):
             raise UnsupportedFileFormatError(extension=file_path.suffix)
 
         start_time = time.perf_counter()
-        logger.info(f"Старт конвертации Excel документа: {file_path.name}", file_path.name)
+        logger.info(f"Старт конвертации Excel документа: {file_path.name}")
 
         try:
             markdown_content = await asyncio.to_thread(self._preprocess_excel, file_path)

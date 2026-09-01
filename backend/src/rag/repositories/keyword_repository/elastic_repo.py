@@ -55,7 +55,7 @@ class ElasticRepository(BaseKeywordRepository):
         except Exception as e:
             raise KeywordDatabaseError(f"Ошибка получения списка индексов: {e}")
 
-    async def get_index_details(self, index: str) -> KeywordIndexSchema:
+    async def get_index_details(self, index: str) -> KeywordIndexSchema | None:
         try:
             info = await self.client.count(index=index)
             return KeywordIndexSchema(
@@ -71,7 +71,7 @@ class ElasticRepository(BaseKeywordRepository):
         try:
             await self.client.indices.delete(index=index)
         except NotFoundError:
-            raise CollectionNotFoundError(index)
+            return None
         except Exception as e:
             raise KeywordDatabaseError(str(e))
 
@@ -79,7 +79,7 @@ class ElasticRepository(BaseKeywordRepository):
         try:
             await self.client.delete_by_query(index=index, query={"match_all": {}})
         except NotFoundError:
-            raise CollectionNotFoundError(index)
+            return None
         except Exception as e:
             raise KeywordDatabaseError(str(e))
 
@@ -100,7 +100,7 @@ class ElasticRepository(BaseKeywordRepository):
                 refresh=True
             )
         except NotFoundError:
-            raise CollectionNotFoundError(index_name)
+            return None
         except Exception as e:
             raise KeywordDatabaseError(str(e))
 

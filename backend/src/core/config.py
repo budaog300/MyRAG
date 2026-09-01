@@ -117,7 +117,7 @@ class SettingsRabbitMQ(BaseSettings):
 class SettingsS3(BaseSettings):
     ENDPOINT_URL: str = Field(default="http://localhost:9000")
     ACCESS_KEY: str = Field(default="admin")
-    SECRET_KEY: str = Field(default="admin")
+    SECRET_KEY: str = Field(default="admin12345")
     BUCKET_NAME: str = Field(default="documents")
     REGION: str = Field(default="us-east-1")
 

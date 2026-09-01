@@ -15,6 +15,7 @@ from src.core.exceptions.rag_service_exceptions import (
     RAGException,
 )
 from src.core.exceptions.repo_exceptions import CollectionNotFoundError
+from src.rag.prompts import RAG_USER_PROMPT, RAG_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,6 @@ class RAGService:
         retrieve_limit: int = 50,
         merge_limit: int = 20,
         top_k: int = 5,
-        system_prompt: Optional[str] = None,
         only_context: bool = True,
         **kwargs,
     ) -> Tuple[Optional[str], List[RAGDocument]]:
@@ -67,7 +67,7 @@ class RAGService:
                 docs = await self.ai_service.reranker.compress_documents(
                     query=query,
                     documents=docs,
-                    top_K=top_k,
+                    top_k=top_k,
                 )
                 logger.info(f"Получено документов после реранкинга: {len(docs)}")
             except BaseAppException:
@@ -97,14 +97,13 @@ class RAGService:
             return None, final_docs
 
         context_text = "\n\n---\n\n".join([doc.content for doc in final_docs])
-
-        prompt = (
-            f"Используй следующий контекст для ответа на вопрос.\n\n"
-            f"КОНТЕКСТ:\n{context_text if context_text else 'Нет информации'}\n\n"
-            f"ВОПРОС: {query}"
+        
+        prompt = RAG_USER_PROMPT.format(
+            query=query.strip(),
+            context=context_text if context_text else 'Нет информации'
         )
 
-        system_prompt = system_prompt or self.ai_service.config.llm.prompt
+        system_prompt = RAG_SYSTEM_PROMPT
 
         try:
             answer = await self.ai_service.llm.generate(
@@ -144,10 +143,10 @@ class RAGService:
 
         answer, documents = await self._full_step(
             query=query.strip(),
-            collection_name=collection.name.strip(),
+            collection_name=str(collection.id),
             retrieve_limit=retrieve_limit,
             merge_limit=merge_limit,
-            top_K=top_k,
+            top_k=top_k,
             temperature=temperature,
             max_tokens=max_tokens,
             only_context=only_context,

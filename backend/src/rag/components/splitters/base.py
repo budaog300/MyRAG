@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 from src.rag.schemas.document import RawDocumentSchema, RAGDocument
 
+
 class BaseDocumentSplitter(ABC):
     @abstractmethod
     def split(

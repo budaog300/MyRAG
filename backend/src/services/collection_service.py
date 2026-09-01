@@ -96,7 +96,7 @@ class CollectionService:
             collection = await self.db_repo.collection_repo.get_by_id(collection_id)
             
             if collection is None:
-                raise CollectionNotFoundError(collection_name)
+                raise CollectionNotFoundError(str(collection_id))
 
             collection_name = str(collection.id)
             
@@ -129,7 +129,7 @@ class CollectionService:
     async def clear_collection(self, collection_id: UUID) -> None:
         collection = await self.db_repo.collection_repo.get_by_id(collection_id)
         if collection is None:
-            raise CollectionNotFoundError(collection_id)
+            raise CollectionNotFoundError(str(collection_id))
         logger.info(f"Очистка содержимого коллекции '{collection.name}'")
         try:
             documents = await self.db_repo.document_repo.get_all(collection.id)
@@ -156,6 +156,7 @@ class CollectionService:
         collection = await self.db_repo.collection_repo.get_by_id(collection_id)
         if collection is None:
             raise CollectionNotFoundError(collection_id)
+        collection_name = collection.name
         logger.info(f"Удаление коллекции '{collection.name}")
         try:
             documents = await self.db_repo.document_repo.get_all(collection.id)
@@ -171,17 +172,17 @@ class CollectionService:
             await self.db_repo.collection_repo.delete(collection)
             await self.db_repo.collection_repo.session.commit()
             
-            logger.info(f"Коллекция '{collection.name}' очищена. Удалено S3 файлов: {len(documents)}")
+            logger.info(f"Коллекция '{collection_name}' очищена. Удалено S3 файлов: {len(documents)}")
         except BaseAppException:
             raise
         except Exception as exc:
-            logger.error(f"Ошибка при удалении коллекции '{collection.name}': {exc}")
-            raise CollectionOperationError(operation="delete", collection_name=collection.name, details=str(exc)) from exc
+            logger.error(f"Ошибка при удалении коллекции '{collection_name}': {exc}")
+            raise CollectionOperationError(operation="delete", collection_name=collection_name, details=str(exc)) from exc
 
     async def get_documents(
         self,
         collection_id: UUID,
-        limit: int = 5,
+        limit: int | None = None,
         offset: int = 0,
     ) -> list[DocumentModel]:
         try:
@@ -246,9 +247,12 @@ class CollectionService:
         if collection is None:
             raise CollectionNotFoundError(collection_id)
 
-        logger.info(f"Удаление документов с document_id='{document_id}' из коллекции '{collection.name}'")
+        logger.info(f"Удаление документа с document_id='{document_id}' из коллекции '{collection.name}'")
         try:
-            document = await self.db_repo.document_repo.get_by_id(document_id)
+            document = await self.db_repo.document_repo.get_by_id(
+                collection_id=collection_id,
+                document_id=document_id,
+            )
             if document is None or document.collection_id != collection.id:
                 raise DocumentNotFoundError(str(document_id), str(collection_id))
             collection_name = str(collection_id)

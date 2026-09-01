@@ -8,7 +8,7 @@ from src.api.deps import CollectionDep, RAGDep, PaginationDep, DatabaseDep
 router = APIRouter(prefix="/collections", tags=["Admin Collections"])
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=CollectionResponseSchema, summary="Создать коллекцию во всех БД")
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=CollectionResponseSchema, summary="Создать коллекцию во всех БД")
 async def admin_create_collection(
     collection: AddCollectionSchema, 
     service: CollectionDep
@@ -22,7 +22,7 @@ async def admin_create_collection(
     return collection
 
 
-@router.get("/", response_model=List[CollectionResponseSchema], summary="Получить список коллекций")
+@router.get("", response_model=List[CollectionResponseSchema], summary="Получить список коллекций")
 async def admin_get_collections(
     service: CollectionDep   
 ):
@@ -84,7 +84,7 @@ async def admin_delete_document(
     service: CollectionDep
 ):
     await service.delete_document(collection_id, document_id)
-    return {"message": f"Документ '{document_id}' удален из коллекций {collection_id}"}
+    return {"message": f"Документ '{document_id}' удален из коллекции {collection_id}"}
 
 
 @router.post("/{collection_id}/search", response_model=RAGResponseSchema, summary="Запрос в документацию (RAG)")

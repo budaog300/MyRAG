@@ -1,4 +1,3 @@
-import httpx
 from typing import List, Dict, Any, Optional
 from src.rag.ai.providers import BaseRerankerProvider, BaseAIProvider
 from src.rag.schemas.document import RAGDocument
@@ -60,4 +59,4 @@ class RerankerProvider(BaseAIProvider, BaseRerankerProvider):
             except IndexError:
                 raise RerankerError(f"Индекс {item['index']} из ответа реранкера выйдет за пределы списка документов")
 
-        return ranked_docs
+        return ranked_docs[:limit]

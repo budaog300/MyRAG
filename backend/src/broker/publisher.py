@@ -1,5 +1,6 @@
 import logging
 import aio_pika
+from uuid import uuid4
 from pydantic import BaseModel
 from src.broker.base import BaseRabbitMQ
 from src.core.config import settingsRabbitMQ
@@ -25,6 +26,7 @@ class RabbitMQPublisher(BaseRabbitMQ):
             )
             
             message = aio_pika.Message(
+                message_id=str(uuid4()),
                 body=obj.model_dump_json().encode(),
                 content_type="application/json",
                 delivery_mode=aio_pika.DeliveryMode.PERSISTENT,

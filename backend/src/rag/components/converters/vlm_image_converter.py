@@ -17,6 +17,7 @@ from src.core.exceptions.converter_exceptions import (
     DocumentFileNotFoundError,
     UnsupportedFileFormatError
 )
+from src.rag.prompts import PICTURE_DESCRIPTION_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +70,7 @@ class VLMImageConverter(BaseDocumentConverter):
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": vlm_config.prompt},
+                        {"type": "text", "text": PICTURE_DESCRIPTION_PROMPT},
                         {
                             "type": "image_url",
                             "image_url": {

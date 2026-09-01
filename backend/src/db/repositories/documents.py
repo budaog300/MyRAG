@@ -61,9 +61,8 @@ class DocumentRepository(BaseRepository):
     async def get_all(
         self,
         collection_id: UUID,
-        limit: int = 5,
-        offset: int = 0,
-
+        limit: int | None = None,
+        offset: int = 0
     ) -> list[DocumentModel]:
         query = (
             select(DocumentModel)
@@ -91,11 +90,12 @@ class DocumentRepository(BaseRepository):
 
     async def update_status(
         self,
+        collection_id: UUID,
         document_id: UUID,
         status: DocumentStatus,
         error_message: str | None = None,
     ) -> DocumentModel | None:
-        document = await self.get_by_id(document_id)
+        document = await self.get_by_id(collection_id, document_id)
 
         if document is None:
             return None

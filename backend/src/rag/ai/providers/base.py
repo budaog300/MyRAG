@@ -86,7 +86,7 @@ class BaseRerankerProvider(ABC):
         self,
         query: str,
         documents: List[RAGDocument],
-        top_K: Optional[int] = None,
+        top_k: Optional[int] = None,
     ) -> List[RAGDocument]:
         ...
 

@@ -66,7 +66,7 @@ class QdrantRepository(BaseVectorRepository):
         except Exception as e:
             raise VectorDatabaseError(f"Ошибка при получении списка коллекций: {e}")
 
-    async def get_collection_details(self, collection_name: str) -> VectorCollectionSchema:
+    async def get_collection_details(self, collection_name: str) -> VectorCollectionSchema | None:
         try:
             info = await self.client.get_collection(collection_name)
             return VectorCollectionSchema(
@@ -97,7 +97,7 @@ class QdrantRepository(BaseVectorRepository):
                 )
         except UnexpectedResponse as e:
             if e.status_code == 404:
-                raise CollectionNotFoundError(collection_name)
+                return None
             raise VectorDatabaseError(str(e))
         except Exception as e:
             raise VectorDatabaseError(str(e))
@@ -113,7 +113,7 @@ class QdrantRepository(BaseVectorRepository):
                 )
         except UnexpectedResponse as e:
             if e.status_code == 404:
-                raise CollectionNotFoundError(collection_name)
+                return None
             raise VectorDatabaseError(str(e))
         except Exception as e:
             raise VectorDatabaseError(str(e))
@@ -137,7 +137,7 @@ class QdrantRepository(BaseVectorRepository):
             )
             except UnexpectedResponse as e:
                 if e.status_code == 404:
-                    raise CollectionNotFoundError(collection_name)
+                    return None
                 raise VectorDatabaseError(str(e))
             except Exception as e:
                 raise VectorDatabaseError(str(e))

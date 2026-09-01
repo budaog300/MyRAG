@@ -23,7 +23,12 @@ class CollectionModel(BaseEntity):
     size: Mapped[Optional[str]] = mapped_column(Integer, default=1024, nullable=False)
     distance: Mapped[Optional[str]] = mapped_column(String, default="COSINE", nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    documents: Mapped[list["DocumentModel"]] = relationship(back_populates="collection")
+    documents: Mapped[list["DocumentModel"]] = relationship(
+        "DocumentModel",
+        back_populates="collection",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
 
 class DocumentModel(BaseEntity):

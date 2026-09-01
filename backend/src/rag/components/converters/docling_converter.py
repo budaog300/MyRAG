@@ -31,6 +31,7 @@ from src.core.exceptions.converter_exceptions import (
     UnsupportedFileFormatError,
     VLMProviderServiceError,
 )
+from src.rag.prompts import PICTURE_DESCRIPTION_PROMPT, CODE_FORMULA_PROMPT
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("httpx").setLevel(logging.DEBUG)
@@ -38,24 +39,6 @@ logging.getLogger("urllib3").setLevel(logging.DEBUG)
 logging.getLogger("docling").setLevel(logging.DEBUG)
 
 logger = logging.getLogger("DoclingDebug")
-
-PICTURE_DESCRIPTION_PROMPT = """
-Ты — OCR и VLM-аналитик для базы знаний. Внимательно изучи ВСЁ ИЗОБРАЖЕНИЕ от верхнего до нижнего края.
-
-Сделай следующее:
-1. ВЫПИШИ ВЕСЬ ТЕКСТ: Найди и дословно перепиши абсолютно все заголовки, подзаголовки, списки и подписи к иконкам, весь текст.
-2. СМЫСЛ И СТРУКТУРА: В 2-3 предложениях описать главный смысл инфографики или схемы.
-3. НЕ ОПИСЫВАЙ ВИЗУАЛЬНЫЙ СТИЛЬ (цвета, фон, градиенты): фокус только на данных и тексте.
-
-Формат ответа:
-**Текст на картинке:**
-- [Заголовок]
-- [Пункт 1]
-- [Пункт 2] ...
-
-**Описание картинки:**
-[Краткое описание]
-""".strip()
 
 
 class DoclingDocumentConverter(BaseDocumentConverter):
@@ -129,7 +112,7 @@ class DoclingDocumentConverter(BaseDocumentConverter):
             vlm_spec = VlmModelSpec(
                 name=self.code_formula_config.model_name,
                 default_repo_id="docling-project/CodeFormula",
-                prompt=self.code_formula_config.prompt,
+                prompt=CODE_FORMULA_PROMPT,
                 response_format=ResponseFormat.MARKDOWN,
                 api_overrides={
                     VlmEngineType.API: api_config,
