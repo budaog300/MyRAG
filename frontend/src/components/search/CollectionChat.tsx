@@ -11,7 +11,7 @@ const DEFAULT_SETTINGS: SearchRequest = {
   top_k: 5,
   temperature: 0.3,
   max_tokens: 512,
-  only_context: true,
+  only_context: false,
 };
 
 const CollectionChat = () => {
@@ -115,7 +115,7 @@ const CollectionChat = () => {
                 setSettings((prev) => ({ ...prev, only_context: event.target.checked }))
               }
             />
-            <span>only_context</span>
+            <span>Вернуть только контекст</span>
           </label>
         </div>
       </div>
@@ -139,7 +139,7 @@ const CollectionChat = () => {
         </div>
       )}
 
-        {(documents.length > 0 || (!documents.length && !search.isPending && !search.isError && search.isSuccess)) && (
+      {(documents.length > 0 || (!documents.length && !search.isPending && !search.isError && search.isSuccess)) && (
         <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
           <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Источники</p>
           {documents.length === 0 ? (
@@ -149,9 +149,9 @@ const CollectionChat = () => {
               <article key={doc.id ?? doc.source} className="rounded-2xl border border-border bg-muted/20 p-3 text-sm">
                 <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
                   <span>{doc.source || "Источник"}</span>
-          <span>Score: {doc.score?.toFixed(4) ?? "~"}</span>
+                  <span>Score: {doc.score?.toFixed(4) ?? "~"}</span>
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">{doc.raw_content ?? doc.content}</p>
+                <p className="mt-2 text-xs text-muted-foreground">{doc.content}</p>
               </article>
             ))
           )}

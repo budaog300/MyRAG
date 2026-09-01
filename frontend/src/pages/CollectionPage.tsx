@@ -1,13 +1,18 @@
 import { useState } from "react";
 import { NavLink, Outlet, useNavigate, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCollection } from "@/hooks/useCollection";
+import { useDeleteCollection } from "@/hooks/useCollectionActions";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import Spinner from "@/components/ui/Spinner";
 import { toast } from "sonner";
 
 const CollectionPage = () => {
+  const client = useQueryClient();
+  const [isDeleting, setIsDeleting] = useState(false);
   const { collectionId } = useParams<{ collectionId: string }>();
-  const { query, deleteMutation, clearMutation } = useCollection(collectionId);
+  const { query, clearMutation } = useCollection(isDeleting ? undefined : collectionId);
+  const deleteMutation = useDeleteCollection();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isClearOpen, setIsClearOpen] = useState(false);
   const navigate = useNavigate();
@@ -43,16 +48,24 @@ const CollectionPage = () => {
     return null;
   }
 
-  const handleDelete = () => {
-    deleteMutation.mutate(collectionId, {
-      onSuccess: () => {
-        toast.success("Коллекция удалена");
-        navigate("/collections");
-      },
-      onError: () => {
-        toast.error("Не удалось удалить коллекцию");
-      },
-    });
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+
+      await deleteMutation.mutateAsync(collectionId);
+
+      await client.invalidateQueries({
+        queryKey: ["collections"],
+        exact: true,
+      });
+
+      navigate("/collections", { replace: true });
+
+      toast.success("Коллекция удалена");
+    } catch {
+      setIsDeleting(false);
+      toast.error("Не удалось удалить коллекцию");
+    }
   };
 
   const handleClear = () => {
@@ -76,18 +89,18 @@ const CollectionPage = () => {
           <p className="text-[10px] uppercase tracking-[0.5em] text-muted-foreground">ID: {collection.id}</p>
         </div>
         <div className="flex flex-wrap gap-3">
-        <button
-          className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-muted-foreground"
-          onClick={() => setIsClearOpen(true)}
-          disabled={clearMutation.isPending}
-        >
+          <button
+            className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-muted-foreground"
+            onClick={() => setIsClearOpen(true)}
+            disabled={clearMutation.isPending}
+          >
             Очистить
           </button>
           <button
-          className="rounded-full bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground"
-          onClick={() => setIsDeleteOpen(true)}
-          disabled={deleteMutation.isPending}
-        >
+            className="rounded-full bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground"
+            onClick={() => setIsDeleteOpen(true)}
+            disabled={deleteMutation.isPending}
+          >
             Удалить коллекцию
           </button>
         </div>
@@ -116,8 +129,7 @@ const CollectionPage = () => {
           to="."
           end
           className={({ isActive }) =>
-            `rounded-full px-4 py-2 text-sm font-semibold ${
-              isActive ? "bg-secondary text-secondary-foreground" : "text-muted-foreground"
+            `rounded-full px-4 py-2 text-sm font-semibold ${isActive ? "bg-secondary text-secondary-foreground" : "text-muted-foreground"
             }`}
         >
           Chat
@@ -125,8 +137,7 @@ const CollectionPage = () => {
         <NavLink
           to="documents"
           className={({ isActive }) =>
-            `rounded-full px-4 py-2 text-sm font-semibold ${
-              isActive ? "bg-secondary text-secondary-foreground" : "text-muted-foreground"
+            `rounded-full px-4 py-2 text-sm font-semibold ${isActive ? "bg-secondary text-secondary-foreground" : "text-muted-foreground"
             }`}
         >
           Documents
@@ -137,28 +148,28 @@ const CollectionPage = () => {
         <Outlet />
       </div>
 
-        <ConfirmDialog
-          open={isClearOpen}
-          title="Очистить коллекцию?"
-          description="Все чанки и исходные файлы будут удалены, но сама коллекция останется."
-          onCancel={() => setIsClearOpen(false)}
-          onConfirm={() => {
-            setIsClearOpen(false);
-            handleClear();
-          }}
-          loading={clearMutation.isPending}
-        />
-        <ConfirmDialog
-          open={isDeleteOpen}
-          title="Удалить коллекцию?"
-          description="Коллекция, индексы, документы, чанки и исходные файлы будут удалены."
-          onCancel={() => setIsDeleteOpen(false)}
-          onConfirm={() => {
-            setIsDeleteOpen(false);
-            handleDelete();
-          }}
-          loading={deleteMutation.isPending}
-        />
+      <ConfirmDialog
+        open={isClearOpen}
+        title="Очистить коллекцию?"
+        description="Все чанки и исходные файлы будут удалены, но сама коллекция останется."
+        onCancel={() => setIsClearOpen(false)}
+        onConfirm={() => {
+          setIsClearOpen(false);
+          handleClear();
+        }}
+        loading={clearMutation.isPending}
+      />
+      <ConfirmDialog
+        open={isDeleteOpen}
+        title="Удалить коллекцию?"
+        description="Коллекция, индексы, документы, чанки и исходные файлы будут удалены."
+        onCancel={() => setIsDeleteOpen(false)}
+        onConfirm={() => {
+          setIsDeleteOpen(false);
+          handleDelete();
+        }}
+        loading={deleteMutation.isPending}
+      />
     </section>
   );
 };

@@ -74,94 +74,97 @@ const CollectionsPage = () => {
       </div>
     );
   }
-
-  if (!data || data.length === 0) {
-    return (
-      <div className="space-y-4 rounded-2xl border border-border bg-card p-6 text-center text-muted-foreground shadow-xl">
-        <p>Коллекций пока нет.</p>
-        <button className="rounded-full bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground" onClick={handleCreate}>
-          + Создать коллекцию
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <section className="space-y-6">
-      <header className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold">Коллекции</h2>
-        <button className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-secondary" onClick={handleCreate}>
-          + Создать коллекцию
-        </button>
-      </header>
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-xl">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr>
-              <th className="px-3 py-2 font-semibold text-muted-foreground">Название</th>
-              <th className="px-3 py-2 font-semibold text-muted-foreground">Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((collection) => (
-              <tr key={collection.id} className="border-t border-border">
-                <td className="px-3 py-3 text-foreground">
-                  <Link to={`/collections/${collection.id}`} className="text-secondary">
-                    {collection.name}
-                  </Link>
-                </td>
-                <td className="px-3 py-3 space-x-2">
-                  <button
-                    className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-muted-foreground"
-                    onClick={() => navigate(`/collections/${collection.id}`)}
-                  >
-                    Перейти
-                  </button>
-                  <button
-                    className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-destructive"
-                    onClick={() => setPendingDelete(collection.id)}
-                  >
-                    Удалить
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-        <CollectionCreateDialog
-          open={createVisible}
-          loading={createMutation.isPending || ingestMutation.isPending}
-          onClose={() => setCreateVisible(false)}
-          onSubmit={(payload) => {
-            setCreateVisible(false);
-            handleCreated(payload);
-          }}
-        />
-        <ConfirmDialog
-          open={Boolean(pendingDelete)}
-          title="Удалить коллекцию?"
-          description="Все документы, чанки и связанные исходные файлы будут удалены."
-          onCancel={() => setPendingDelete(null)}
-          onConfirm={() => {
-            if (!pendingDelete) {
-              return;
-            }
-            deleteMutation.mutate(pendingDelete, {
-              onSuccess: () => {
-                toast.success("Коллекция удалена");
-                setPendingDelete(null);
-              },
-              onError: () => {
-                toast.error("Не удалось удалить коллекцию");
-                setPendingDelete(null);
-              },
-            });
-          }}
-          loading={deleteMutation.isPending}
-        />
-    </section>
+    <>
+      {!data || data.length === 0 ? (
+        <div className="space-y-4 rounded-2xl border border-border bg-card p-6 text-center text-muted-foreground shadow-xl">
+          <p>Коллекций пока нет.</p>
+
+          <button
+            className="rounded-full bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground"
+            onClick={handleCreate}
+          >
+            + Создать коллекцию
+          </button>
+        </div>
+      ) : (
+        <section className="space-y-6">
+          <header className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold">Коллекции</h2>
+            <button className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-secondary" onClick={handleCreate}>
+              + Создать коллекцию
+            </button>
+          </header>
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-xl">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr>
+                  <th className="px-3 py-2 font-semibold text-muted-foreground">Название</th>
+                  <th className="px-3 py-2 font-semibold text-muted-foreground">Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((collection) => (
+                  <tr key={collection.id} className="border-t border-border">
+                    <td className="px-3 py-3 text-foreground">
+                      <Link to={`/collections/${collection.id}`} className="text-secondary">
+                        {collection.name}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-3 space-x-2">
+                      <button
+                        className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-muted-foreground"
+                        onClick={() => navigate(`/collections/${collection.id}`)}
+                      >
+                        Перейти
+                      </button>
+                      <button
+                        className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-destructive"
+                        onClick={() => setPendingDelete(collection.id)}
+                      >
+                        Удалить
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+      <CollectionCreateDialog
+        open={createVisible}
+        loading={createMutation.isPending || ingestMutation.isPending}
+        onClose={() => setCreateVisible(false)}
+        onSubmit={(payload) => {
+          setCreateVisible(false);
+          handleCreated(payload);
+        }}
+      />
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title="Удалить коллекцию?"
+        description="Все документы, чанки и связанные исходные файлы будут удалены."
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (!pendingDelete) {
+            return;
+          }
+          deleteMutation.mutate(pendingDelete, {
+            onSuccess: () => {
+              toast.success("Коллекция удалена");
+              setPendingDelete(null);
+            },
+            onError: () => {
+              toast.error("Не удалось удалить коллекцию");
+              setPendingDelete(null);
+            },
+          });
+        }}
+        loading={deleteMutation.isPending}
+      />
+    </>
   );
-};
+}
 
 export default CollectionsPage;

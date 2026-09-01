@@ -14,13 +14,12 @@ export const useDocument = (collectionId?: string, documentId?: string) => {
 
   const deleteMutation = useMutation<void, ApiErrorPayload, { documentId: string }>({
     mutationFn: ({ documentId }) => deleteDocument(collectionId!, documentId),
-    onSuccess: () => {
-      if (!collectionId || !documentId) {
-        return;
-      }
-      client.invalidateQueries({ queryKey: ["documents", collectionId] });
-      client.invalidateQueries({ queryKey: ["documents", collectionId, documentId] });
-    },
+    // onSuccess: () => {
+    //   if (!collectionId || !documentId) {
+    //     return;
+    //   }
+    //   client.invalidateQueries({ queryKey: ["documents", collectionId] });
+    // },
   });
 
   return { query, deleteMutation };

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { CollectionDetails } from "@/types/collection";
 import type { ApiErrorPayload } from "@/types/api";
-import { fetchCollection, deleteCollection, clearCollection } from "@/api/collections";
+import { fetchCollection, clearCollection } from "@/api/collections";
 import type { CollectionId } from "@/api/collections";
 
 export const useCollection = (collectionId?: CollectionId) => {
@@ -11,13 +11,9 @@ export const useCollection = (collectionId?: CollectionId) => {
     queryKey: ["collections", collectionId],
     queryFn: () => fetchCollection(collectionId!),
     enabled: Boolean(collectionId),
-  });
-
-  const deleteMutation = useMutation<void, ApiErrorPayload, CollectionId>({
-    mutationFn: deleteCollection,
-    onSuccess: () => {
-      client.invalidateQueries({ queryKey: ["collections"] });
-    },
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    gcTime: 0,
   });
 
   const clearMutation = useMutation<void, ApiErrorPayload, CollectionId>({
@@ -26,10 +22,19 @@ export const useCollection = (collectionId?: CollectionId) => {
       if (!collectionId) {
         return;
       }
-      client.invalidateQueries({ queryKey: ["documents", collectionId] });
-      client.invalidateQueries({ queryKey: ["collections", collectionId] });
+
+      client.invalidateQueries({
+        queryKey: ["documents", collectionId],
+      });
+
+      client.invalidateQueries({
+        queryKey: ["collections", collectionId],
+      });
     },
   });
 
-  return { query, deleteMutation, clearMutation };
+  return {
+    query,
+    clearMutation,
+  };
 };

@@ -14,13 +14,13 @@ interface CollectionCreateDialogProps {
   }) => void;
 }
 
-const distanceOptions = ["cos", "dot", "euclid"];
+const distanceOptions = ["COSINE", "dot", "euclid"];
 
 const CollectionCreateDialog = ({ open, loading, onClose, onSubmit }: CollectionCreateDialogProps) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [size, setSize] = useState(1536);
-  const [distance, setDistance] = useState("cos");
+  const [distance, setDistance] = useState("COSINE");
   const [files, setFiles] = useState<File[]>([]);
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
@@ -28,7 +28,7 @@ const CollectionCreateDialog = ({ open, loading, onClose, onSubmit }: Collection
     setName("");
     setDescription("");
     setSize(1536);
-    setDistance("cos");
+    setDistance("COSINE");
     setFiles([]);
     setAdvancedOpen(false);
   };

@@ -4,10 +4,14 @@ import type { ApiErrorPayload } from "@/types/api";
 
 export const useDeleteCollection = () => {
   const client = useQueryClient();
+
   return useMutation<void, ApiErrorPayload, string>({
     mutationFn: (collectionId) => deleteCollection(collectionId),
     onSuccess: () => {
-      client.invalidateQueries({ queryKey: ["collections"] });
+      client.invalidateQueries({
+        queryKey: ["collections"],
+        exact: true,
+      });
     },
   });
 };
