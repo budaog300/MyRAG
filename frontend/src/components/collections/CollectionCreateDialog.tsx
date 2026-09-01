@@ -14,20 +14,26 @@ interface CollectionCreateDialogProps {
   }) => void;
 }
 
-const distanceOptions = ["COSINE", "dot", "euclid"];
+const distanceOptions = [
+  { value: "COSINE", label: "Cosine" },
+  { value: "DOT", label: "Dot product" },
+  { value: "EUCLID", label: "Euclidean" },
+  { value: "MANHATTAN", label: "Manhattan" },
+];
 
 const CollectionCreateDialog = ({ open, loading, onClose, onSubmit }: CollectionCreateDialogProps) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [size, setSize] = useState(1536);
+  const [size, setSize] = useState(1024);
   const [distance, setDistance] = useState("COSINE");
   const [files, setFiles] = useState<File[]>([]);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [sizeError, setSizeError] = useState("");
 
   const resetForm = () => {
     setName("");
     setDescription("");
-    setSize(1536);
+    setSize(1024);
     setDistance("COSINE");
     setFiles([]);
     setAdvancedOpen(false);
@@ -42,6 +48,11 @@ const CollectionCreateDialog = ({ open, loading, onClose, onSubmit }: Collection
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (!name.trim()) {
+      return;
+    }
+    if (size <= 0) {
+      setSizeError("Размер должен быть больше 0");
+      setAdvancedOpen(true);
       return;
     }
     onSubmit({
@@ -60,7 +71,7 @@ const CollectionCreateDialog = ({ open, loading, onClose, onSubmit }: Collection
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <form
-        className="w-full max-w-2xl space-y-6 rounded-3xl border border-border bg-card p-6 shadow-2xl"
+        className="w-full max-w-2xl space-y-6 rounded-3xl border border-border bg-black p-6 shadow-2xl"
         onSubmit={handleSubmit}
       >
         <header>
@@ -70,7 +81,7 @@ const CollectionCreateDialog = ({ open, loading, onClose, onSubmit }: Collection
 
         <div className="grid gap-4 md:grid-cols-2">
           <label className="space-y-1 text-sm text-muted-foreground">
-            <span>Название</span>
+            <span>Название <span className="text-destructive">*</span></span>
             <input
               className="w-full rounded-2xl border border-border bg-muted/20 px-3 py-2 text-foreground focus:border-primary"
               required
@@ -100,25 +111,41 @@ const CollectionCreateDialog = ({ open, loading, onClose, onSubmit }: Collection
           {advancedOpen && (
             <div className="mt-3 grid gap-4 md:grid-cols-2">
               <label className="space-y-1 text-sm text-muted-foreground">
-                <span>Размер векторного пространства</span>
+                <span>Размер векторного пространства <span className="text-destructive">*</span></span>
                 <input
                   type="number"
                   min={1}
                   value={size}
-                  onChange={(event) => setSize(Number(event.target.value))}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    setSize(value);
+                    if (value > 0) {
+                      setSizeError("");
+                    }
+                    else {
+                      setSizeError("Размер должен быть больше 0");
+                    }
+                  }}
                   className="w-full rounded-2xl border border-border bg-muted/20 px-3 py-2 text-foreground focus:border-primary"
                 />
+                {sizeError && (
+                  <p className="text-xs text-destructive"> {sizeError} </p>
+                )}
               </label>
               <label className="space-y-1 text-sm text-muted-foreground">
-                <span>Алгоритм схожести</span>
+                <span>Алгоритм схожести <span className="text-destructive">*</span></span>
                 <select
                   value={distance}
                   onChange={(event) => setDistance(event.target.value)}
                   className="w-full rounded-2xl border border-border bg-muted/20 px-3 py-2 text-foreground focus:border-primary"
                 >
                   {distanceOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
+                    <option
+                      key={option.value}
+                      value={option.value}
+                      className="bg-black text-white"
+                    >
+                      {option.label}
                     </option>
                   ))}
                 </select>

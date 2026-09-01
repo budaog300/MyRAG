@@ -3,7 +3,6 @@ import {
   type Dispatch,
   type InputHTMLAttributes,
   type SetStateAction,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -21,7 +20,7 @@ interface DirectoryInputAttributes extends InputHTMLAttributes<HTMLInputElement>
 }
 
 const directoryInputProps: DirectoryInputAttributes = {
-  accept: "*/*",
+  accept: ".pdf,.md,.txt,.xlsx,.doc,.docx,.pptx,.html,.htm,.png,.jpg,.jpeg,.webp",
   multiple: true,
   webkitdirectory: true,
 };
@@ -57,19 +56,11 @@ const FilePicker = ({ files, onFilesChange, disabled }: FilePickerProps) => {
     onFilesChange((prev: File[]) => prev.filter((_, idx) => idx !== index));
   };
 
-  const helperText = useMemo(() => {
-    if (!files.length) {
-      return "Поддерживается drag-and-drop, multiple, выбрать директорию\n(webkitdirectory)";
-    }
-    return `${files.length} файлов выбрано`;
-  }, [files.length]);
-
   return (
     <div className="space-y-2">
       <div
-        className={`rounded-2xl border-2 border-dashed px-4 py-6 text-center text-sm transition ${
-          isDragging ? "border-secondary bg-secondary/20" : "border-border"
-        }`}
+        className={`rounded-2xl border-2 border-dashed px-4 py-6 text-center text-sm transition ${isDragging ? "border-secondary bg-secondary/20" : "border-border"
+          }`}
         onDragEnter={(event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -87,8 +78,8 @@ const FilePicker = ({ files, onFilesChange, disabled }: FilePickerProps) => {
         }}
         onDrop={handleDrop}
       >
-        <p className="text-sm font-semibold text-foreground">Перетащите файлы сюда</p>
-        <p className="text-xs text-muted-foreground">{helperText}</p>
+        <p className="text-sm font-semibold text-foreground">Добавьте документы</p>
+        <p className="text-sm font-semibold text-foreground">Перетащите файлы или папку сюда</p>
         <button
           type="button"
           className="mt-3 text-xs font-semibold text-secondary"
@@ -97,7 +88,7 @@ const FilePicker = ({ files, onFilesChange, disabled }: FilePickerProps) => {
             inputRef.current?.click();
           }}
         >
-          Выбрать вручную
+          Выбрать файлы
         </button>
         <input
           {...directoryInputProps}
