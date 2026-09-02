@@ -4,16 +4,24 @@ import Spinner from "@/components/ui/Spinner";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCollection } from "@/hooks/useCollection";
-import { useDeleteCollection } from "@/hooks/useCollectionActions";
+import { useDeleteCollection, useUpdateCollection, useClearCollection } from "@/hooks/useCollectionActions";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import CollectionUpdateDialog from "@/components/collections/CollectionUpdateDialog";
 import InfoTooltip from "@/components/ui/InfoTooltip";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 const CollectionPage = () => {
   const client = useQueryClient();
   const [isDeleting, setIsDeleting] = useState(false);
   const { collectionId } = useParams<{ collectionId: string }>();
-  const { query, clearMutation } = useCollection(isDeleting ? undefined : collectionId);
+  const { query } = useCollection(isDeleting ? undefined : collectionId);
+  const clearMutation = useClearCollection();
   const deleteMutation = useDeleteCollection();
+  const updateMutation = useUpdateCollection();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isClearOpen, setIsClearOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -49,6 +57,24 @@ const CollectionPage = () => {
   if (!collection) {
     return null;
   }
+
+  const handleUpdate = (payload: UpdateCollectionPayload) => {
+    if (!collectionId) {
+      return;
+    }
+
+    updateMutation.mutate(
+      {
+        collectionId,
+        payload,
+      },
+      {
+        onSuccess: () => {
+          setIsEditOpen(false);
+        },
+      },
+    );
+  };
 
   const handleDelete = async () => {
     try {
@@ -86,8 +112,23 @@ const CollectionPage = () => {
       <header className="flex flex-col gap-3 border-b border-border pb-4 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-[0.4em] text-accent">Коллекция</p>
-          <h2 className="mt-1 text-3xl font-semibold text-foreground">{collection.name}</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">{collection.description || "Описание отсутствует"}</p>
+          <div className="mt-1 flex items-center gap-2">
+            <h2 className="mt-1 text-3xl font-semibold text-foreground">{collection.name}</h2>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-border text-xs text-muted-foreground hover:text-foreground"
+                >
+                  ?
+                </button>
+              </PopoverTrigger>
+
+              <PopoverContent className="w-100 bg-black text-sm leading-relaxed text-foreground text-justify">
+                {collection.description || "Описание отсутствует"}
+              </PopoverContent>
+            </Popover>
+          </div>
           <p className="mt-2 text-[10px] uppercase tracking-[0.5em] text-muted-foreground">ID: {collection.id}</p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -123,13 +164,23 @@ const CollectionPage = () => {
         </summary>
         <div className="mt-3 grid gap-4 md:grid-cols-2">
           <article className="space-y-1 rounded-2xl border border-border bg-muted/10 p-3">
-            <h3 className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Векторное хранилище</h3>
+            <h3 className="flex items-center gap-1 text-xs uppercase text-muted-foreground">
+              <span className="tracking-[0.4em]">
+                Векторное хранилище
+              </span>
+              <InfoTooltip text="Хранилище векторных представлений документов. Используется для поиска фрагментов по смысловой близости." />
+            </h3>
             <p className="text-sm text-muted-foreground">Размер вектора: {collection.vector_repo_info.size}</p>
             <p className="text-sm text-muted-foreground">Метрика расстояния: {collection.vector_repo_info.distance}</p>
             <p className="text-sm text-muted-foreground">Количество фрагментов: {collection.vector_repo_info.points_count}</p>
           </article>
           <article className="space-y-1 rounded-2xl border border-border bg-muted/10 p-3">
-            <h3 className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Полнотекстовый поиск</h3>
+            <h3 className="flex items-center gap-1 text-xs uppercase text-muted-foreground">
+              <span className="tracking-[0.4em]">
+                Текстовое хранилище
+              </span>
+              <InfoTooltip text="Хранилище текстовых данных. Используется для поиска фрагментов по совпадениям в тексте." />
+            </h3>
             <p className="text-sm text-muted-foreground">Количество фрагментов: {collection.keyword_repo_info.points_count}</p>
           </article>
         </div>
@@ -181,11 +232,13 @@ const CollectionPage = () => {
         }}
         loading={deleteMutation.isPending}
       />
-      {/* <EditCollectionDialog
+      <CollectionUpdateDialog
         open={isEditOpen}
-        collection={collection}
+        loading={updateMutation.isPending}
+        collection={query.data!}
         onClose={() => setIsEditOpen(false)}
-      /> */}
+        onSubmit={handleUpdate}
+      />
     </section>
   );
 };

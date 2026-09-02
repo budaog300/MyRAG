@@ -1,7 +1,7 @@
 from typing import List
 from uuid import UUID
 from fastapi import APIRouter, Query, status
-from src.api.schemas.request_schemas import AddCollectionSchema, QuerySchema
+from src.api.schemas.request_schemas import AddCollectionSchema, QuerySchema, UpdateCollectionSchema
 from src.api.schemas.response_schemas import CollectionResponseSchema, CollectionDetailsResponseSchema, DocumentSchema, DocumentsResponseSchema, RAGResponseSchema
 from src.api.deps import CollectionDep, RAGDep, PaginationDep, DatabaseDep
 
@@ -35,6 +35,19 @@ async def admin_get_collection_details(
     service: CollectionDep
 ):
     return await service.get_collection_details(collection_id)
+
+
+@router.patch("/{collection_id}", response_model=CollectionDetailsResponseSchema, summary="Обновить коллекцию")
+async def update_collection(
+    collection_id: UUID,
+    data: UpdateCollectionSchema,
+    service: CollectionDep,
+):
+    return await service.update_collection(
+        collection_id=collection_id,
+        name=data.name,
+        description=data.description,
+    )
 
 
 @router.delete("/{collection_id}/points", summary="Очистить содержимое коллекции")

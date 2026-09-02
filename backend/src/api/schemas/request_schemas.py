@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class QuerySchema(BaseModel):
@@ -16,7 +16,19 @@ class AddCollectionSchema(BaseModel):
     name: str = Field(..., min_length=5, description="Введите название коллекции")
     size: int = Field(..., ge=1, description="Введите размер векторной размерности")
     distance: str = Field(..., min_length=1, description="Введите вид расстояния")
-    description: str = Field(default=None, min_length=1, description="Введите описание коллекции")
+    description: str | None = Field(default=None, description="Введите описание коллекции")
+
+
+class UpdateCollectionSchema(BaseModel):
+    name: str | None = Field(default=None, min_length=5, description="Введите название коллекции")
+    description: str | None = Field(default=None, description="Введите описание коллекции")
+
+    @model_validator(mode="after")
+    def validate_update(self):
+        if self.name is None and self.description is None:
+            raise ValueError("Не указаны данные для обновления коллекции")
+
+        return self
 
 
 class AddIndexSchema(BaseModel):

@@ -15,9 +15,22 @@ const Header = () => {
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-sm text-muted-foreground">
-            <span className={`h-2 w-2 rounded-full ${healthy ? "bg-emerald-400" : "bg-rose-500"}`} />
-            <span>{healthy ? "Backend online" : "Backend offline"}</span>
+            <span
+              className={`h-2 w-2 rounded-full ${healthy ? "bg-emerald-400" : "bg-rose-500"
+                }`}
+            />
+            <span>
+              {healthy ? "Backend online" : "Backend offline"}
+            </span>
           </div>
+
+          <button
+            type="button"
+            className="rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+            title="Собрать данные для поддержки"
+          >
+            Логи
+          </button>
         </div>
       </div>
       <div className="flex items-center justify-between text-xs text-muted-foreground">

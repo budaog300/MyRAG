@@ -175,7 +175,7 @@ const CollectionChat = () => {
 
       <div className="rounded-2xl border border-border bg-card p-5 shadow-xl">
         <p className="mb-3 text-sm font-semibold text-foreground">
-          Задайте вопрос
+          Задать вопрос
         </p>
 
         <div className="flex flex-col gap-3 md:flex-row">

@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 
 from src.db.models import CollectionModel
 from src.db.repositories.base import BaseRepository
@@ -56,6 +56,29 @@ class CollectionRepository(BaseRepository):
         )
 
         return list(result.scalars().all())
+
+    async def update(
+        self,
+        collection_id: uuid.UUID,
+        name: str | None = None,
+        description: str | None = None,
+    ) -> CollectionModel:
+        values = {}
+
+        if name is not None:
+            values["name"] = name
+
+        if description is not None:
+            values["description"] = description
+        stmt = (
+            update(CollectionModel)
+            .where(CollectionModel.id == collection_id)
+            .values(**values)
+            .returning(CollectionModel)
+        )
+        result = await self.session.execute(stmt)
+        await self.session.flush()
+        return result.scalar_one_or_none()
 
     async def delete(
         self,

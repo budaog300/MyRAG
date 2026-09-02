@@ -70,6 +70,7 @@ class CollectionService:
                 self.vector_repo.create_collection(collection_name=collection_name, size=size, distance=distance),
                 self.keyword_repo.create_index(index=collection_name),
             )
+            logger.info(f"Коллекция '{collection.name}' создана")
             return collection
         except BaseAppException:
             raise
@@ -126,6 +127,30 @@ class CollectionService:
                 details=str(exc),
             ) from exc
 
+    async def update_collection(
+        self,
+        collection_id: UUID,
+        name: str | None,
+        description: str | None,
+    ) -> CollectionModel | None:
+        logger.info(f"Обновляем коллекцию '{collection_id}'")
+        try:
+            collection = await self.db_repo.collection_repo.update(
+                collection_id=collection_id,
+                name=name,
+                description=description,
+            )
+
+            if collection is None:
+                raise CollectionNotFoundError(str(collection_id))
+            logger.info("Коллекция '%s' обновлена: name=%s, description=%s", collection.id, name, description)
+            return collection
+        except BaseAppException:
+            raise
+        except Exception as exc:
+            logger.error(f"Ошибка при обновлении коллекции '{collection_id}': {exc}")
+            raise CollectionOperationError(operation="update", collection_name=str(collection_id), details=str(exc)) from exc  
+       
     async def clear_collection(self, collection_id: UUID) -> None:
         collection = await self.db_repo.collection_repo.get_by_id(collection_id)
         if collection is None:

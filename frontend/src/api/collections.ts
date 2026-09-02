@@ -8,6 +8,12 @@ export interface CreateCollectionPayload {
   description?: string;
 }
 
+export interface UpdateCollectionPayload {
+  name?: string;
+  description?: string;
+}
+
+
 export type CollectionId = string;
 
 export const fetchCollections = async (): Promise<CollectionSummary[]> => {
@@ -22,6 +28,11 @@ export const fetchCollection = async (collectionId: CollectionId): Promise<Colle
 
 export const createCollection = async (payload: CreateCollectionPayload): Promise<CollectionDetails> => {
   const { data } = await client.post<CollectionDetails>("/collections", payload);
+  return data;
+};
+
+export const updateCollection = async (collectionId: CollectionId, payload: UpdateCollectionPayload): Promise<CollectionDetails> => {
+  const { data } = await client.patch(`/collections/${collectionId}`, payload);
   return data;
 };
 
