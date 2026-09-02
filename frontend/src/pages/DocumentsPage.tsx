@@ -59,7 +59,7 @@ const DocumentsPage = () => {
     <div className="space-y-6">
       <div className="rounded-2xl border border-border bg-card p-6 shadow-xl">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-lg font-semibold">Documents</h3>
+          <h3 className="text-lg font-semibold">Документы</h3>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>Выбрано файлов: {files.length}</span>
             <button
@@ -71,7 +71,9 @@ const DocumentsPage = () => {
             </button>
           </div>
         </div>
-        <FilePicker files={files} onFilesChange={setFiles} disabled={ingestMutation.isPending} />
+        <div className="mt-5">
+          <FilePicker files={files} onFilesChange={setFiles} disabled={ingestMutation.isPending} />
+        </div>
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-4 shadow-xl">
@@ -146,20 +148,20 @@ const DocumentsPage = () => {
         />
       </div>
 
-        <ConfirmDialog
-          open={Boolean(pendingDelete)}
-          title="Удалить документ?"
-          description="Документ будет удалён из коллекции и все чанки также удалятся."
-          onCancel={() => setPendingDelete(null)}
-          onConfirm={() => {
-            if (!collectionId || !pendingDelete) {
-              return;
-            }
-            deleteMutation.mutate({ documentId: pendingDelete });
-            setPendingDelete(null);
-          }}
-          loading={deleteMutation.isPending}
-        />
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title="Удалить документ?"
+        description="Документ будет удалён из коллекции и все чанки также удалятся."
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (!collectionId || !pendingDelete) {
+            return;
+          }
+          deleteMutation.mutate({ documentId: pendingDelete });
+          setPendingDelete(null);
+        }}
+        loading={deleteMutation.isPending}
+      />
     </div>
   );
 };

@@ -37,8 +37,14 @@ const ConfirmDialog = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <section className="w-full max-w-md space-y-4 rounded-2xl border border-border bg-card p-6 shadow-2xl">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={onCancel}
+    >
+      <section
+        className="w-full max-w-md space-y-4 rounded-2xl border border-border bg-black p-6 shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
         <header>
           <h3 className="text-lg font-semibold text-foreground">{title}</h3>
           <p className="text-sm text-muted-foreground">{description}</p>

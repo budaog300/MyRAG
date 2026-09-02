@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useState } from "react";
 import FilePicker from "@/components/documents/FilePicker";
+import InfoTooltip from "@/components/ui/InfoTooltip";
 
 interface CollectionCreateDialogProps {
   open: boolean;
@@ -69,9 +70,13 @@ const CollectionCreateDialog = ({ open, loading, onClose, onSubmit }: Collection
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+      onClick={onClose}
+    >
       <form
-        className="w-full max-w-2xl space-y-6 rounded-3xl border border-border bg-black p-6 shadow-2xl"
+        className="w-full max-w-4xl space-y-6 rounded-3xl border border-border bg-black p-6 shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
         onSubmit={handleSubmit}
       >
         <header>
@@ -85,12 +90,17 @@ const CollectionCreateDialog = ({ open, loading, onClose, onSubmit }: Collection
             <input
               className="w-full rounded-2xl border border-border bg-muted/20 px-3 py-2 text-foreground focus:border-primary"
               required
+              minLength={5}
               value={name}
               onChange={(event) => setName(event.target.value)}
             />
           </label>
           <label className="space-y-1 text-sm text-muted-foreground">
-            <span>Описание</span>
+            <span className="flex items-center gap-1.5">
+              <span>Описание</span>
+              <InfoTooltip text="Необязательное описание коллекции, чтобы было понятно, для чего она используется." />
+            </span>
+
             <textarea
               className="w-full rounded-2xl border border-border bg-muted/20 px-3 py-2 text-foreground focus:border-primary"
               value={description}
@@ -106,13 +116,17 @@ const CollectionCreateDialog = ({ open, loading, onClose, onSubmit }: Collection
             className="text-sm font-semibold text-secondary"
             onClick={() => setAdvancedOpen((prev) => !prev)}
           >
-            {advancedOpen ? "Скрыть" : "Advanced settings"}
+            {advancedOpen ? "Скрыть" : "Дополнительные настройки"}
           </button>
           {advancedOpen && (
             <div className="mt-3 grid gap-4 md:grid-cols-2">
               <label className="space-y-1 text-sm text-muted-foreground">
-                <span>Размер векторного пространства <span className="text-destructive">*</span></span>
+                <span className="flex items-center gap-1.5 whitespace-nowrap">
+                  Размер векторного пространства <span className="text-destructive">*</span>
+                  <InfoTooltip text="Количество чисел, из которых состоит вектор каждого фрагмента документа. Должно соответствовать размерности выбранной модели эмбеддингов." />
+                </span>
                 <input
+                  required
                   type="number"
                   min={1}
                   value={size}
@@ -133,8 +147,12 @@ const CollectionCreateDialog = ({ open, loading, onClose, onSubmit }: Collection
                 )}
               </label>
               <label className="space-y-1 text-sm text-muted-foreground">
-                <span>Алгоритм схожести <span className="text-destructive">*</span></span>
+                <span className="flex items-center gap-1.5 whitespace-nowrap">
+                  Алгоритм схожести <span className="text-destructive">*</span>
+                  <InfoTooltip text="Определяет, как система сравнивает векторы документов и поискового запроса. Для большинства моделей эмбеддингов подходит Cosine." />
+                </span>
                 <select
+                  required
                   value={distance}
                   onChange={(event) => setDistance(event.target.value)}
                   className="w-full rounded-2xl border border-border bg-muted/20 px-3 py-2 text-foreground focus:border-primary"
