@@ -20,3 +20,8 @@ export interface CollectionDetails extends CollectionSummary {
     points_count: number
   }
 }
+
+export interface UpdateCollectionRequest {
+  name?: string;
+  description?: string;
+}

@@ -8,6 +8,9 @@ import { useDeleteCollection, useUpdateCollection, useClearCollection } from "@/
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import CollectionUpdateDialog from "@/components/collections/CollectionUpdateDialog";
 import InfoTooltip from "@/components/ui/InfoTooltip";
+import type {
+  UpdateCollectionRequest
+} from "@/types/collection";
 import {
   Popover,
   PopoverContent,
@@ -58,7 +61,7 @@ const CollectionPage = () => {
     return null;
   }
 
-  const handleUpdate = (payload: UpdateCollectionPayload) => {
+  const handleUpdate = (payload: UpdateCollectionRequest) => {
     if (!collectionId) {
       return;
     }

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useSearch } from "@/hooks/useSearch";
 import Spinner from "@/components/ui/Spinner";
 import type { SearchRequest } from "@/types/search";
@@ -105,13 +107,13 @@ const CollectionChat = () => {
             />
           </label>
 
-          <label className="flex min-h-[72px] flex-col justify-between text-[11px] text-muted-foreground">
+          <label className="flex min-h-[72px] flex-col text-[11px] text-muted-foreground">
             <span className="flex min-h-8 items-start gap-1">
               <span>Креативность ответа</span>
               <InfoTooltip text="Определяет случайность ответа модели. Низкие значения дают более точные и предсказуемые ответы." />
             </span>
 
-            <div className="flex items-center gap-3">
+            <div className="flex h-10 items-center gap-3">
               <input
                 type="range"
                 min={0}
@@ -215,9 +217,11 @@ const CollectionChat = () => {
             Ответ LLM
           </p>
 
-          <p className="mt-2 text-base leading-relaxed">
-            {search.data.answer}
-          </p>
+          <div className="prose prose-invert mt-4 max-w-none">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {search.data.answer}
+            </ReactMarkdown>
+          </div>
         </div>
       )}
 

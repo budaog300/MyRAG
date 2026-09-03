@@ -143,13 +143,15 @@ class CollectionService:
 
             if collection is None:
                 raise CollectionNotFoundError(str(collection_id))
+            await self.db_repo.collection_repo.session.commit()
             logger.info("Коллекция '%s' обновлена: name=%s, description=%s", collection.id, name, description)
-            return collection
+            return await self.get_collection_details(collection_id)
+
         except BaseAppException:
             raise
         except Exception as exc:
             logger.error(f"Ошибка при обновлении коллекции '{collection_id}': {exc}")
-            raise CollectionOperationError(operation="update", collection_name=str(collection_id), details=str(exc)) from exc  
+            raise CollectionOperationError(operation="update", collection_name=str(collection_id), details=str(exc)) from exc
        
     async def clear_collection(self, collection_id: UUID) -> None:
         collection = await self.db_repo.collection_repo.get_by_id(collection_id)

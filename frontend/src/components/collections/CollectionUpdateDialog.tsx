@@ -1,18 +1,15 @@
 import { type FormEvent, useEffect, useState } from "react";
-
-import InfoTooltip from "@/components/ui/InfoTooltip";
-
 import type {
     CollectionDetails,
-    UpdateCollectionPayload,
-} from "@/types/collections";
+    UpdateCollectionRequest
+} from "@/types/collection";
 
 interface CollectionUpdateDialogProps {
     open: boolean;
     loading?: boolean;
     collection: CollectionDetails;
     onClose: () => void;
-    onSubmit: (payload: UpdateCollectionPayload) => void;
+    onSubmit: (payload: UpdateCollectionRequest) => void;
 }
 
 const CollectionUpdateDialog = ({
@@ -35,7 +32,7 @@ const CollectionUpdateDialog = ({
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault();
 
-        const payload: UpdateCollectionPayload = {};
+        const payload: UpdateCollectionRequest = {};
 
         if (name.trim() !== collection.name) {
             payload.name = name.trim();
@@ -80,8 +77,7 @@ const CollectionUpdateDialog = ({
                 <div className="space-y-4">
                     <label className="space-y-1 text-sm text-muted-foreground">
                         <span>
-                            Название{" "}
-                            <span className="text-destructive">*</span>
+                            Название
                         </span>
 
                         <input
@@ -97,15 +93,13 @@ const CollectionUpdateDialog = ({
                     <label className="space-y-1 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1.5">
                             <span>Описание</span>
-
-                            <InfoTooltip text="Необязательное описание коллекции, чтобы было понятно, для чего она используется." />
                         </span>
 
                         <textarea
                             className="w-full rounded-2xl border border-border bg-muted/20 px-3 py-2 text-foreground focus:border-primary"
                             value={description}
                             onChange={(event) => setDescription(event.target.value)}
-                            rows={3}
+                            rows={10}
                             disabled={loading}
                         />
                     </label>
