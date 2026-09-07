@@ -7,7 +7,7 @@ import io
 import zipfile
 import openpyxl
 from openpyxl.utils.exceptions import InvalidFileException
-from docling.datamodel.base_models import InputFormat, DocumentStream
+from docling.datamodel.base_models import DocumentStream
 from docling.document_converter import DocumentConverter
 
 from src.rag.components.converters import BaseDocumentConverter

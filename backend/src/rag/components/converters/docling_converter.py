@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Set, Optional
 
 from docling.document_converter import DocumentConverter, PdfFormatOption, ImageFormatOption
-from docling.datamodel.pipeline_options import PdfPipelineOptions, PictureDescriptionApiOptions, TesseractOcrOptions, CodeFormulaVlmOptions
+from docling.datamodel.pipeline_options import PdfPipelineOptions, PictureDescriptionApiOptions, CodeFormulaVlmOptions
 from docling.datamodel.stage_model_specs import (
     VlmModelSpec,
     ApiModelConfig,

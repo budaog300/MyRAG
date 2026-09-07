@@ -60,6 +60,7 @@ logs/
 .env.*.local
 *storage/
 docs/
+docs*/
 
 # Docker
 *.tar

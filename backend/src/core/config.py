@@ -7,7 +7,7 @@ class SettingsQdrant(BaseSettings):
     QDRANT_URL: str = Field(default="http://localhost:6333")
     QDRANT_API_KEY: str | None = None
 
-    model_config = SettingsConfigDict(env_file=".env.qdrant")
+    model_config = SettingsConfigDict(env_file=None, extra="ignore")
 
     @property
     def get_auth_data(self) -> dict:
@@ -21,7 +21,7 @@ class SettingsElastic(BaseSettings):
     ELASTIC_URL: str = Field(default="http://localhost:9200")
     ELASTIC_API_KEY: str | None = None
 
-    model_config = SettingsConfigDict(env_file=".env.elastic")
+    model_config = SettingsConfigDict(env_file=None, extra="ignore")
 
     @property
     def get_auth_data(self) -> dict:
@@ -60,7 +60,7 @@ class SettingsAI(BaseSettings):
     RERANK_API_URL: str = "http://ollama:11434/v1/embeddings"
     RERANK_API_KEY: str = ""
 
-    model_config = SettingsConfigDict(env_file=".env.ai", extra="ignore")
+    model_config = SettingsConfigDict(env_file=None, extra="ignore")
 
     def build_ai_config(self) -> AIServiceConfig:
         """Сборка AIServiceConfig из env-переменных"""
@@ -98,7 +98,7 @@ class SettingsAI(BaseSettings):
 
 class SettingsRabbitMQ(BaseSettings):    
     RABBITMQ_HOST: str = Field(default="localhost")
-    RABBITMQ_PORT: int = Field(default="5672")
+    RABBITMQ_PORT: int = Field(default=5672)
     RABBITMQ_USER: str = Field(default="guest")
     RABBITMQ_PASSWORD: str = Field(default="guest")
     RABBITMQ_VHOST: str = Field(default="/")
@@ -107,7 +107,7 @@ class SettingsRabbitMQ(BaseSettings):
     documents_queue: str = Field(default="documents_queue")
     documents_routing_key: str = Field(default="documents.ingest")
 
-    model_config = SettingsConfigDict(env_file=".env.rabbitmq", extra="ignore")
+    model_config = SettingsConfigDict(env_file=None, extra="ignore")
     
     @property
     def get_auth_data(self) -> str:
@@ -115,26 +115,25 @@ class SettingsRabbitMQ(BaseSettings):
 
 
 class SettingsS3(BaseSettings):
-    ENDPOINT_URL: str = Field(default="http://localhost:9000")
-    ACCESS_KEY: str = Field(default="admin")
-    SECRET_KEY: str = Field(default="admin12345")
-    BUCKET_NAME: str = Field(default="documents")
-    REGION: str = Field(default="us-east-1")
+    S3_ENDPOINT_URL: str = Field(default="http://localhost:9000")
+    S3_ACCESS_KEY: str = Field(default="admin")
+    S3_SECRET_KEY: str = Field(default="admin12345")
+    S3_BUCKET_NAME: str = Field(default="documents")
+    S3_REGION: str = Field(default="us-east-1")
 
-    model_config = SettingsConfigDict(env_file=".env.s3", extra="ignore")
+    model_config = SettingsConfigDict(env_file=None, extra="ignore")
 
 
 class SettingsDB(BaseSettings):
-    USER: str = Field(default="postgres")
-    PASSWORD: str = Field(default="123")
-    HOST: str = Field(default="localhost")
-    PORT: int = Field(default=5432)
+    DB_USER: str = Field(default="postgres")
+    DB_PASSWORD: str = Field(default="123")
+    DB_HOST: str = Field(default="localhost")
+    DB_PORT: int = Field(default=5432)
     DB_NAME: str = Field(default="rag_db")
-    
-    DB_POOL_SIZE: int = 10
-    DB_MAX_OVERFLOW: int = 20
+    DB_POOL_SIZE: int = Field(default=10)
+    DB_MAX_OVERFLOW: int = Field(default=20)
 
-    model_config = SettingsConfigDict(env_file=".env.db", extra="ignore")
+    model_config = SettingsConfigDict(env_file=None, extra="ignore")
 
     @property
     def get_auth_data(self) -> str:
