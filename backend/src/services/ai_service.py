@@ -1,6 +1,6 @@
 import logging
 from typing import Optional
-from src.core.ai_config import ModelConfig, AIServiceConfig, EngineMode
+from src.core.ai_config import ModelConfig, VLMConfig, AIServiceConfig, EngineMode
 from src.rag.ai.providers import *
 from src.core.exceptions.ai_service_exceptions import (    
     AIServiceInitializationError,
@@ -60,7 +60,7 @@ class AIService:
             logger.error("Ошибка инициализации Embedder провайдера: %s", exc)
             raise AIServiceInitializationError(service_name="Embedder", details=str(exc)) from exc
 
-    def _init_vlm(self, config: ModelConfig) -> BaseVLMProvider:
+    def _init_vlm(self, config: VLMConfig) -> BaseVLMProvider:
         if config.mode not in (EngineMode.API, EngineMode.LOCAL):
             raise UnsupportedEngineModeError(service_name="VLM", mode=str(config.mode))
         try:

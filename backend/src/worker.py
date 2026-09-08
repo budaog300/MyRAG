@@ -10,11 +10,13 @@ from src.services import DocumentService, DocumentConverterService, AIService, S
 from src.rag.components.converters import DoclingDocumentConverter, TextDocumentConverter, VLMImageConverter, ExcelConverter
 from src.rag.components.splitters import HierarchicalMarkdownSplitter
 from src.worker_handler import process_document_task
+from src.core.logger import setup_logger
 
 logger = logging.getLogger(__name__)
 
 
 async def main():
+    setup_logger()
     logger.info("Создаем AI конфиг и AI сервис...")
     ai_config = settingsAI.build_ai_config()
     ai_service = AIService(ai_config)

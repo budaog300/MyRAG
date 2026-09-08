@@ -1,5 +1,3 @@
-import time
-import logging
 import asyncio
 from pathlib import Path
 from typing import Set, Optional
@@ -19,8 +17,7 @@ from src.core.exceptions.converter_exceptions import (
     PipelineInitializationError,
     UnsupportedFileFormatError,
 )
-
-logger = logging.getLogger(__name__)
+from src.core.logger import logger
 
 
 class ExcelConverter(BaseDocumentConverter):
@@ -117,21 +114,14 @@ class ExcelConverter(BaseDocumentConverter):
 
         return self.DELIMITER.join(processed_sheets)
 
-    async def convert(self, file_path: Path) -> str:
+    async def _convert(self, file_path: Path) -> str:
         if not file_path.exists():
             raise DocumentFileNotFoundError(file_path=str(file_path))
 
         if not self.supports(file_path):
             raise UnsupportedFileFormatError(extension=file_path.suffix)
-
-        start_time = time.perf_counter()
-        logger.info(f"Старт конвертации Excel документа: {file_path.name}")
-
         try:
             markdown_content = await asyncio.to_thread(self._preprocess_excel, file_path)
-
-            elapsed = time.perf_counter() - start_time
-            logger.info(f"Excel файл {file_path.name} успешно конвертирован за {elapsed:.2f} c")
             return markdown_content
 
         except DocumentConversionError:

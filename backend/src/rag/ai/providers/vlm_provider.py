@@ -1,7 +1,10 @@
+import logging
 import base64
 from typing import List
 from src.rag.ai.providers import BaseVLMProvider, BaseAIProvider
 from src.core.exceptions.provider_exceptions import VLMError
+
+logger = logging.getLogger(__name__)
 
 
 class VLMProvider(BaseAIProvider, BaseVLMProvider):
@@ -11,6 +14,7 @@ class VLMProvider(BaseAIProvider, BaseVLMProvider):
         try:
             b64_image = base64.b64encode(image_bytes).decode("utf-8")
         except Exception as e:
+            logger.exception("VLM image encoding failed: model=%s", self.config.model_name)
             raise VLMError(f"Ошибка кодирования изображения в base64: {e}")
 
         payload = {
@@ -33,6 +37,9 @@ class VLMProvider(BaseAIProvider, BaseVLMProvider):
         data = await self._post(payload)
         
         try:
-            return data["choices"][0]["message"]["content"]
+            result = data["choices"][0]["message"]["content"]
+            logger.info("VLM response: model=%s, response_length=%d", self.config.model_name, len(result))
+            return result
         except (KeyError, IndexError, TypeError) as e:
+            logger.error("VLM response parsing failed: model=%s, error=%s", self.config.model_name, e)
             raise VLMError(f"Не удалось извлечь ответ VLM: {e}")

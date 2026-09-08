@@ -1,5 +1,3 @@
-# src/rag/components/converters/text_converter.py
-import logging
 import asyncio
 from pathlib import Path
 from typing import Set
@@ -11,24 +9,26 @@ from src.core.exceptions.converter_exceptions import (
     FileEncodingError,
     UnsupportedFileFormatError,
 )
-
-logger = logging.getLogger(__name__)
+from src.core.logger import logger
 
 
 class TextDocumentConverter(BaseDocumentConverter):
     """Конвертер для простых текстовых файлов (.txt, .md)."""
 
-    SUPPORTED_EXTENSIONS: Set[str] = {".md", ".markdown", ".txt"}
+    SUPPORTED_EXTENSIONS: Set[str] = {".md", ".txt"}
 
-    async def convert(self, file_path: Path) -> str:
+    async def _convert(self, file_path: Path) -> str:
         if not file_path.exists():
             raise DocumentFileNotFoundError(file_path=str(file_path))
 
         if not self.supports(file_path):
             raise UnsupportedFileFormatError(extension=file_path.suffix)
-
         try:
-            return await asyncio.to_thread(file_path.read_text, encoding="utf-8")
+            content = await asyncio.to_thread(
+                file_path.read_text,
+                encoding="utf-8",
+            )
+            return content
         except UnicodeDecodeError as exc:
             logger.error(f"Ошибка кодировки файла {file_path.name}: {exc}")
             raise FileEncodingError(file_path=file_path.name, encoding="utf-8") from exc

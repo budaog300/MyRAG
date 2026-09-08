@@ -1,9 +1,9 @@
 import time
+import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from src.core.logger import logger
 from src.services import RAGService, AIService, CollectionService, S3Service
 from src.rag.repositories import QdrantRepository, ElasticRepository
 from src.rag.repositories.context_enricher import ContextEnricher
@@ -12,10 +12,14 @@ from src.api.exception_handlers import register_exception_handlers
 from src.api.routes import router_vector_repo, router_keyword_repo, router_admin_repo, router_ingest, router_health
 from src.broker.publisher import RabbitMQPublisher
 from src.db.database import engine
+from src.core.logger import setup_logger
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    setup_logger()    
     logger.info("Запускаем приложение...")
     ai_service = AIService()
 
@@ -78,4 +82,4 @@ async def add_process_time_header(request: Request, call_next):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("src.main:app", host="0.0.0.0", port=8000)

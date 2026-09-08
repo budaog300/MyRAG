@@ -44,6 +44,9 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch:9.1.2
     env_file:
       - ./env/.env.backend
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     healthcheck:
@@ -85,6 +88,14 @@ services:
     depends_on:
       migrations:
         condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
     restart: unless-stopped
 
   rag_worker:
@@ -97,6 +108,14 @@ services:
     depends_on:
       migrations:
         condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
     restart: unless-stopped
 
   rag_frontend:

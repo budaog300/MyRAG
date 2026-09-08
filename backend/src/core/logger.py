@@ -11,7 +11,7 @@ def setup_logger() -> logging.Logger:
     if logger.handlers:
         return logger
 
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
 
     formatter = logging.Formatter(
         "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
@@ -33,6 +33,3 @@ def setup_logger() -> logging.Logger:
     logger.addHandler(file_handler)
 
     return logger
-
-
-logger = setup_logger()

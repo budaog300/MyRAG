@@ -1,4 +1,6 @@
 import httpx
+import logging
+import time
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 
@@ -11,6 +13,8 @@ from src.core.exceptions.provider_exceptions import (
     AIProviderTimeoutError
 )
 
+logger = logging.getLogger(__name__)
+
 
 class BaseAIProvider:
     """Базовый класс для всех провайдеров"""
@@ -21,6 +25,8 @@ class BaseAIProvider:
             self.headers["Authorization"] = f"Bearer {config.api_key}"
 
     async def _post(self, payload: dict) -> dict:
+        start_time = time.perf_counter()
+        logger.debug("AI request: model=%s, url=%s", self.config.model_name, self.config.api_url)
         try:
             async with httpx.AsyncClient(timeout=self.config.timeout) as client:
                 response = await client.post(
@@ -29,11 +35,15 @@ class BaseAIProvider:
                     headers=self.headers
                 )
                 response.raise_for_status()
+                elapsed = time.perf_counter() - start_time
+                logger.info("AI request completed: model=%s, status=%d, time=%.2fs", self.config.model_name, response.status_code, elapsed)
                 return response.json()
                 
         except httpx.HTTPStatusError as e:
+            elapsed = time.perf_counter() - start_time
             status_code = e.response.status_code
             detail = e.response.text
+            logger.error("AI HTTP error: model=%s, status=%d, time=%.2fs, detail=%s", self.config.model_name, status_code, elapsed, detail)
             if status_code in (401, 403):
                 raise AIProviderAuthError(detail)
             elif status_code == 429:
@@ -42,12 +52,18 @@ class BaseAIProvider:
                 raise AIProviderError(f"HTTP ошибка {status_code}: {detail}", status_code=502)
                 
         except httpx.TimeoutException as e:
+            elapsed = time.perf_counter() - start_time
+            logger.error("AI timeout: model=%s, time=%.2fs", self.config.model_name, elapsed)
             raise AIProviderTimeoutError(str(e))
             
         except httpx.RequestError as e:
+            elapsed = time.perf_counter() - start_time
+            logger.error("AI network error: model=%s, time=%.2fs, error=%s", self.config.model_name, elapsed, e)
             raise AIProviderError(f"Сетевая ошибка при запросе к AI-провайдеру: {e}")
             
         except Exception as e:
+            elapsed = time.perf_counter() - start_time
+            logger.exception("Unexpected AI provider error: model=%s, time=%.2fs", self.config.model_name, elapsed)
             raise AIProviderError(f"Непредвиденная ошибка AI-провайдера: {e}")
 
 

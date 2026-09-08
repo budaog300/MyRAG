@@ -1,8 +1,9 @@
-import base64
-import httpx
+import logging
 from typing import List, Optional, Dict, Any
 from src.rag.ai.providers import BaseLLMProvider, BaseAIProvider
 from src.core.exceptions.provider_exceptions import LLMError
+
+logger = logging.getLogger(__name__)
 
 
 class LLMProvider(BaseAIProvider, BaseLLMProvider):
@@ -27,6 +28,9 @@ class LLMProvider(BaseAIProvider, BaseLLMProvider):
         }
         data = await self._post(payload)
         try:
-            return data["choices"][0]["message"]["content"]
+            result = data["choices"][0]["message"]["content"]
+            logger.info("LLM response: model=%s, response_length=%d", self.config.model_name, len(result))
+            return result
         except (KeyError, IndexError, TypeError) as e:
+            logger.error("LLM response parsing failed: model=%s, error=%s", self.config.model_name, e)
             raise LLMError(f"Не удалось извлечь ответ LLM: {e}")

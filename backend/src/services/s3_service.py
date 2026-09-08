@@ -1,12 +1,9 @@
-import logging
-from typing import AsyncGenerator
 import aioboto3
 import asyncio
 from botocore.exceptions import ClientError
 from src.core.config import settingsS3
 from src.core.exceptions import BaseAppException
-
-logger = logging.getLogger(__name__)
+from src.core.logger import logger
 
 
 class S3ServiceError(BaseAppException):
@@ -18,10 +15,10 @@ class S3ServiceError(BaseAppException):
 class S3Service:
     def __init__(self):
         self.session = aioboto3.Session()
-        self.endpoint_url = settingsS3.ENDPOINT_URL
-        self.access_key = settingsS3.ACCESS_KEY
-        self.secret_key = settingsS3.SECRET_KEY
-        self.bucket_name = settingsS3.BUCKET_NAME
+        self.endpoint_url = settingsS3.S3_ENDPOINT_URL
+        self.access_key = settingsS3.S3_ACCESS_KEY
+        self.secret_key = settingsS3.S3_SECRET_KEY
+        self.bucket_name = settingsS3.S3_BUCKET_NAME
         self._delete_semaphore = asyncio.Semaphore(20)
 
     def _get_client(self):
@@ -30,7 +27,7 @@ class S3Service:
             endpoint_url=self.endpoint_url,
             aws_access_key_id=self.access_key,
             aws_secret_access_key=self.secret_key,
-            region_name=settingsS3.REGION,
+            region_name=settingsS3.S3_REGION,
         )
 
     async def ensure_bucket_exists(self) -> None:

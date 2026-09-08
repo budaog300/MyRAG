@@ -1,7 +1,10 @@
+import logging
 from typing import List, Dict, Any, Optional
 from src.rag.ai.providers import BaseRerankerProvider, BaseAIProvider
 from src.rag.schemas.document import RAGDocument
 from src.core.exceptions.provider_exceptions import AIProviderResponseParseError, RerankerError
+
+logger = logging.getLogger(__name__)
 
 
 class RerankerProvider(BaseAIProvider, BaseRerankerProvider):
@@ -9,6 +12,7 @@ class RerankerProvider(BaseAIProvider, BaseRerankerProvider):
         self, query: str, documents: List[str], top_k: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         if not documents:
+            logger.warning("Reranker request skipped: documents list is empty")
             return []
             
         payload = {
@@ -32,8 +36,10 @@ class RerankerProvider(BaseAIProvider, BaseRerankerProvider):
                     "index": item["index"],
                     "score": item.get("relevance_score", item.get("score", 0.0))
                 })
+            logger.info("Reranker response: model=%s, results=%d", self.config.model_name, len(results))
             return results
         except (KeyError, TypeError, IndexError) as e:
+            logger.error("Reranker response parsing failed: model=%s, error=%s", self.config.model_name, e)
             raise RerankerError(f"Ошибка парсинга результатов реранкинга: {e}")
 
     async def compress_documents(
@@ -43,6 +49,7 @@ class RerankerProvider(BaseAIProvider, BaseRerankerProvider):
         top_k: Optional[int] = None,
     ) -> List[RAGDocument]:
         if not documents:
+            logger.warning("Reranker request skipped: documents list is empty")
             return []
 
         limit = top_k or len(documents)

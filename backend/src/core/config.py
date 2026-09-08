@@ -1,6 +1,8 @@
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from src.core.ai_config import AIServiceConfig, ModelConfig, EngineMode
+from src.core.ai_config import AIServiceConfig, ModelConfig, VLMConfig, EngineMode
+from src.core.prompts.generation import RAG_SYSTEM_PROMPT, RAG_USER_PROMPT
+from src.core.prompts.vision import PICTURE_DESCRIPTION_PROMPT, CODE_FORMULA_PROMPT
 
 
 class SettingsQdrant(BaseSettings):
@@ -79,12 +81,14 @@ class SettingsAI(BaseSettings):
                 api_url=self.EMBED_API_URL,
                 api_key=self.EMBED_API_KEY,
             ) if self.EMBED_ENABLED else None,
-            vlm=ModelConfig(
+            vlm=VLMConfig(
                 enabled=self.VLM_ENABLED,
                 mode=EngineMode(self.VLM_MODE),
                 model_name=self.VLM_MODEL,
                 api_url=self.VLM_API_URL,
                 api_key=self.VLM_API_KEY,
+                picture_prompt=PICTURE_DESCRIPTION_PROMPT,
+                code_formula_prompt=CODE_FORMULA_PROMPT,
             ) if self.VLM_ENABLED else None,
             reranker=ModelConfig(
                 enabled=self.RERANK_ENABLED,
@@ -137,7 +141,7 @@ class SettingsDB(BaseSettings):
 
     @property
     def get_auth_data(self) -> str:
-        return f"postgresql+asyncpg://{self.USER}:{self.PASSWORD}@{self.HOST}:{self.PORT}/{self.DB_NAME}"
+        return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
     
 
 settingsAI = SettingsAI()

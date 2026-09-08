@@ -15,7 +15,7 @@ from src.core.exceptions.rag_service_exceptions import (
     RAGException,
 )
 from src.core.exceptions.repo_exceptions import CollectionNotFoundError
-from src.rag.prompts import RAG_USER_PROMPT, RAG_SYSTEM_PROMPT
+from src.core.prompts import RAG_USER_PROMPT, RAG_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
 

@@ -1,5 +1,3 @@
-import time
-import logging
 import base64
 import asyncio
 from pathlib import Path
@@ -17,9 +15,7 @@ from src.core.exceptions.converter_exceptions import (
     DocumentFileNotFoundError,
     UnsupportedFileFormatError
 )
-from src.rag.prompts import PICTURE_DESCRIPTION_PROMPT
-
-logger = logging.getLogger(__name__)
+from src.core.logger import logger
 
 
 class VLMImageConverter(BaseDocumentConverter):
@@ -39,7 +35,7 @@ class VLMImageConverter(BaseDocumentConverter):
         with open(file_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode("utf-8")
 
-    async def convert(self, file_path: Path) -> str:
+    async def _convert(self, file_path: Path) -> str:
         if not file_path.exists():
             raise DocumentFileNotFoundError(file_path=str(file_path))
 
@@ -51,7 +47,6 @@ class VLMImageConverter(BaseDocumentConverter):
             return f"<!-- Обработка изображения {file_path.name} пропущена (VLM отключен) -->"
 
         vlm_config = self.ai_service.config.vlm
-        start_time = time.perf_counter()
 
         try:
             base64_image = await asyncio.to_thread(self._encode_image, file_path)
@@ -70,7 +65,7 @@ class VLMImageConverter(BaseDocumentConverter):
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": PICTURE_DESCRIPTION_PROMPT},
+                        {"type": "text", "text": vlm_config.picture_prompt},
                         {
                             "type": "image_url",
                             "image_url": {
@@ -99,7 +94,7 @@ class VLMImageConverter(BaseDocumentConverter):
                 data = response.json()
 
         except httpx.TimeoutException as exc:
-            logger.error(f"Таймаут VLM API ({vlm_config.timeout} {exc}): %s")
+            logger.error("Таймаут VLM API (%s): %s", vlm_config.timeout, exc)
             raise VLMError(
                 message=f"Превышено время ожидания ответа от VLM API ({vlm_config.timeout}s)"
             ) from exc
@@ -125,8 +120,5 @@ class VLMImageConverter(BaseDocumentConverter):
         except (KeyError, IndexError, TypeError) as exc:
             logger.error(f"Некорректная структура JSON от VLM: {exc} | Data: {data}", exc, data)
             raise AIProviderResponseParseError() from exc
-
-        elapsed = time.perf_counter() - start_time
-        logger.info(f"Изображение {file_path.name} успешно обработано VLM за {elapsed:.2f} c")
 
         return f"## Содержимое изображения: {file_path.name}\n\n{extracted_text}"

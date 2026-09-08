@@ -27,21 +27,13 @@ class ModelConfig(BaseModel):
         return self.model_extra or {}
 
 
-class CodeFormulaConfig(BaseModel):
-    """Конфигурация распознавания кода и формул"""
-    enabled: bool = True
-    mode: EngineMode = EngineMode.LOCAL
-
-    api_url: str = "http://localhost:11434/v1/chat/completions"
-    model_name: str = "qwen3-vl:2b"
-    api_key: Optional[str] = None
-    prompt: str = "Extract all formulas in LaTeX and code blocks cleanly."
-    max_tokens: int = 8192
-    temperature: float = 0.0
+class VLMConfig(ModelConfig):
+    picture_prompt: Optional[str] = None
+    code_formula_prompt: Optional[str] = None
 
 
 class AIServiceConfig(BaseModel):
     llm: Optional[ModelConfig] = None
     embedder: Optional[ModelConfig] = None
-    vlm: Optional[ModelConfig] = None
+    vlm: Optional[VLMConfig] = None
     reranker: Optional[ModelConfig] = None
