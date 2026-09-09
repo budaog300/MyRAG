@@ -49,6 +49,7 @@ minio-data/
 *.ipynb_checkpoints
 
 # Project specific
+release/
 logs/
 *.db
 *.sqlite

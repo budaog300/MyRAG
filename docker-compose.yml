@@ -121,6 +121,8 @@ services:
       qdrant:
         condition: service_started
     restart: unless-stopped
+    deploy:
+      replicas: 1
 
   rag_frontend:
     build:
@@ -129,7 +131,7 @@ services:
     env_file:
       - ./env/.env.frontend
     ports:
-      - "80:80"
+      - "8080:80"
     depends_on:
       - rag_backend
     restart: unless-stopped
@@ -138,17 +140,22 @@ services:
     image: ollama/ollama:latest
     volumes:
       - ollama_data:/root/.ollama
-    command: >
-      sh -c "ollama serve & until ollama list >/dev/null 2>&1; do sleep 2; done; ollama pull qwen2.5:7b; wait"
     ports:
       - "11434:11434"
-    gpus: all
+    tty: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
     healthcheck:
       test: [ "CMD", "ollama", "list" ]
-      interval: 10s
-      timeout: 5s
-      retries: 30
-      start_period: 30s
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     restart: unless-stopped
 
   infinity_embeddings:
@@ -169,14 +176,14 @@ services:
 
   infinity_reranker:
     image: michaelf34/infinity:latest
-    command: [ "v2", "--model-id", "BAAI/bge-reranker-base", "--port", "7998" ]
+    command: [ "v2", "--model-id", "BAAI/bge-reranker-v2-m3", "--port", "7998" ]
     volumes:
       - infinity_reranker_data:/app/.cache
     ports:
       - "7998:7998"
     gpus: all
     healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:7997/health || exit 1" ]
+      test: [ "CMD-SHELL", "curl -f http://localhost:7998/health || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 30
