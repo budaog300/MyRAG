@@ -57,6 +57,9 @@ class DailyFileHandler(RotatingFileHandler):
 def setup_logger() -> logging.Logger:
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
 
     if not logger.handlers:
         formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | request_id=%(request_id)s | task_id=%(task_id)s | %(message)s")

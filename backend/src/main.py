@@ -79,22 +79,15 @@ async def add_process_time_header(request: Request, call_next):
     start = time.perf_counter()
     try:
         response = await call_next(request)
-
         process_time = time.perf_counter() - start
         response.headers["X-Process-Time"] = str(process_time)
         response.headers["X-Request-ID"] = request_id
-
-        logger.info(
-            "Запрос завершён: request_id=%s, метод=%s, путь=%s, статус=%d, время=%.2f сек.",
-            request_id,
-            request.method,
-            request.url.path,
-            response.status_code,
-            process_time,
-        )
-
+        logger.info("HTTP %s %s → %d (%.2fs)", request.method, request.url.path, response.status_code, process_time)
         return response
-
+    except Exception:
+        process_time = time.perf_counter() - start
+        logger.exception("HTTP %s %s → 500 (%.2fs)", request.method, request.url.path, process_time)
+        raise
     finally:
         request_id_ctx.reset(token)
 
