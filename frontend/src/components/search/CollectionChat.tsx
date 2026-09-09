@@ -186,6 +186,15 @@ const CollectionChat = () => {
             placeholder="Введите вопрос..."
             value={input}
             onChange={(event) => setInput(event.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                if (!input.trim() || search.isPending) {
+                  return;
+                }
+                handleSearch();
+              }
+            }}
             disabled={search.isPending}
           />
 
@@ -253,9 +262,7 @@ const CollectionChat = () => {
                   </div>
 
                   <div className="prose prose-invert prose-xs mt-2 max-w-none text-muted-foreground">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {doc.content}
-                    </ReactMarkdown>
+                    {doc.content}
                   </div>
                 </article>
               ))

@@ -134,9 +134,61 @@ services:
       - rag_backend
     restart: unless-stopped
 
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    command: >
+      sh -c "ollama serve & until ollama list >/dev/null 2>&1; do sleep 2; done; ollama pull qwen2.5:7b; wait"
+    ports:
+      - "11434:11434"
+    gpus: all
+    healthcheck:
+      test: [ "CMD", "ollama", "list" ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+  infinity_embeddings:
+    image: michaelf34/infinity:latest
+    command: [ "v2", "--model-id", "BAAI/bge-m3", "--port", "7997" ]
+    volumes:
+      - infinity_embeddings_data:/app/.cache
+    ports:
+      - "7997:7997"
+    gpus: all
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:7997/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+  infinity_reranker:
+    image: michaelf34/infinity:latest
+    command: [ "v2", "--model-id", "BAAI/bge-reranker-base", "--port", "7998" ]
+    volumes:
+      - infinity_reranker_data:/app/.cache
+    ports:
+      - "7998:7998"
+    gpus: all
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:7997/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   rabbitmq_data:
   minio_data:
   elasticsearch_data:
   qdrant_data:
+  ollama_data:
+  infinity_embeddings_data:
+  infinity_reranker_data:
