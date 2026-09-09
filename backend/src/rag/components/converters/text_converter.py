@@ -19,31 +19,25 @@ class TextDocumentConverter(BaseDocumentConverter):
 
     SUPPORTED_EXTENSIONS: Set[str] = {".md", ".txt"}
 
-    async def _convert(self, file_path: Path) -> str:
-        if not file_path.exists():
-            raise DocumentFileNotFoundError(file_path=str(file_path))
-
-        if not self.supports(file_path):
-            raise UnsupportedFileFormatError(extension=file_path.suffix)
+    async def _convert(self, file_bytes: bytes, filename: str) -> str:
+        if not self.supports(filename):
+            raise UnsupportedFileFormatError(extension=Path(filename).suffix)
         try:
-            content = await asyncio.to_thread(
-                file_path.read_text,
-                encoding="utf-8",
-            )
+            content = file_bytes.decode("utf-8")
             return content
         except UnicodeDecodeError as exc:
-            logger.error(f"Ошибка кодировки файла {file_path.name}: {exc}")
-            raise FileEncodingError(file_path=file_path.name, encoding="utf-8") from exc
+            logger.error(f"Ошибка кодировки файла {filename}: {exc}")
+            raise FileEncodingError(file_path=filename, encoding="utf-8") from exc
 
         except PermissionError as exc:
-            logger.error(f"Нет прав на чтение файла {file_path.name}: {exc}")
+            logger.error(f"Нет прав на чтение файла {filename}: {exc}")
             raise DocumentConversionError(
-                message=f"Отказано в доступе при чтении файла '{file_path.name}'",
+                message=f"Отказано в доступе при чтении файла '{filename}'",
                 status_code=403,
             ) from exc
 
         except Exception as exc:
-            logger.error(f"Ошибка чтения файла {file_path.name}: {exc}")
+            logger.error(f"Ошибка чтения файла {filename}: {exc}")
             raise DocumentConversionError(
-                message=f"Ошибка при чтении файла '{file_path.name}': {exc}"
+                message=f"Ошибка при чтении файла '{filename}': {exc}"
             ) from exc

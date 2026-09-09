@@ -252,9 +252,11 @@ const CollectionChat = () => {
                     </span>
                   </div>
 
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {doc.content}
-                  </p>
+                  <div className="prose prose-invert prose-xs mt-2 max-w-none text-muted-foreground">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {doc.content}
+                    </ReactMarkdown>
+                  </div>
                 </article>
               ))
             )}

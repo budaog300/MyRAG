@@ -56,32 +56,27 @@ class DailyFileHandler(RotatingFileHandler):
 
 def setup_logger() -> logging.Logger:
     logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
 
-    if logger.handlers:
-        return logger
+    if not logger.handlers:
+        formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(name)s | request_id=%(request_id)s | task_id=%(task_id)s | %(message)s")
 
-    logger.setLevel(logging.ERROR)
+        request_id_filter = RequestIdFilter()
 
-    formatter = logging.Formatter(
-        "%(asctime)s | %(levelname)s | %(name)s | request_id=%(request_id)s | task_id=%(task_id)s | %(message)s"
-    )
+        console = logging.StreamHandler()
+        console.setLevel(logging.INFO)
+        console.setFormatter(formatter)
+        console.addFilter(request_id_filter)
 
-    request_id_filter = RequestIdFilter()
+        file_handler = DailyFileHandler(log_dir=LOG_DIR, filename_prefix="backend", max_bytes=10 * 1024 * 1024, backup_count=5)
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(formatter)
+        file_handler.addFilter(request_id_filter)
 
-    console = logging.StreamHandler()
-    console.setFormatter(formatter)
-    console.addFilter(request_id_filter)
+        logger.addHandler(console)
+        logger.addHandler(file_handler)
 
-    file_handler = DailyFileHandler(
-        log_dir=LOG_DIR,
-        filename_prefix="backend",
-        max_bytes=10 * 1024 * 1024,
-        backup_count=5,
-    )
-    file_handler.setFormatter(formatter)
-    file_handler.addFilter(request_id_filter)
-
-    logger.addHandler(console)
-    logger.addHandler(file_handler)
+    logging.getLogger("uvicorn.access").handlers.clear()
+    logging.getLogger("uvicorn.access").propagate = False
 
     return logger

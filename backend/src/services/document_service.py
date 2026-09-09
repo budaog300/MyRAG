@@ -1,5 +1,7 @@
 import logging
 import asyncio
+import tempfile
+from pathlib import Path
 from langchain_community.document_loaders import TextLoader
 from typing import List, Dict, Any
 
@@ -50,14 +52,13 @@ class DocumentService:
         
         all_children: List[Dict[str, Any]] = []
         all_parents: List[Dict[str, Any]] = []
-
         logger.info("Начата индексация документов: коллекция=%s, документов=%d", collection_name, len(documents))
 
         for doc in documents:
             try:
                 logger.info("Начата обработка документа: collection=%s, source=%s", collection_name, doc.source)
-                markdown_text = await self.converter_service.convert_to_markdown(doc.source)
 
+                markdown_text = await self.converter_service.convert_to_markdown(doc.file_bytes, doc.source)
                 chunks = self.splitter.split(
                     doc=doc,
                     markdown_text=markdown_text,

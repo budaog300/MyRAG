@@ -12,11 +12,11 @@ from src.rag.components.splitters import HierarchicalMarkdownSplitter
 from src.worker_handler import process_document_task
 from src.core.logger import setup_logger
 
+setup_logger()
 logger = logging.getLogger(__name__)
 
 
 async def main():
-    setup_logger()
     ai_config = settingsAI.build_ai_config()
     ai_service = AIService(ai_config)    
     repo = QdrantRepository(ai_service.embedder)

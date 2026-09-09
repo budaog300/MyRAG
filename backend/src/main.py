@@ -16,12 +16,12 @@ from src.db.database import engine
 from src.core.logger import setup_logger
 from src.core.request_context import request_id_ctx
 
+setup_logger()
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    setup_logger()    
+async def lifespan(app: FastAPI): 
     logger.info("Запускаем приложение...")
     ai_service = AIService()
 

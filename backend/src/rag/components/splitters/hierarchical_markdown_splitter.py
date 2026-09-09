@@ -141,7 +141,7 @@ class HierarchicalMarkdownSplitter(BaseDocumentSplitter):
                 for header_split in header_splits:
                     # 1. Нарезаем секцию на Parent-чанки
                     raw_parents = parent_text_splitter.split_text(header_split.page_content)
-                    breadcrumbs = " > ".join([str(v) for v in header_split.metadata.values()])
+                    breadcrumbs = " / ".join([str(v) for v in header_split.metadata.values()])
                     
                     for parent_index, parent_raw_text in enumerate(raw_parents):                    
                         context_prefix = (

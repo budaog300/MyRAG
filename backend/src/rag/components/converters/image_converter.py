@@ -37,28 +37,25 @@ class VLMImageConverter(BaseDocumentConverter):
         with open(file_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode("utf-8")
 
-    async def _convert(self, file_path: Path) -> str:
-        if not file_path.exists():
-            raise DocumentFileNotFoundError(file_path=str(file_path))
-
-        if not self.supports(file_path):
-            raise UnsupportedFileFormatError(extension=file_path.suffix)
+    async def _convert(self, file_bytes: bytes, filename: str) -> str:
+        if not self.supports(filename):
+            raise UnsupportedFileFormatError(extension=Path(filename).suffix)
 
         if self.ai_service.vlm is None:
-            logger.warning(f"VLM отключен (enabled=False). Пропуск обработки изображения: {file_path.name}")
-            return f"<!-- Обработка изображения {file_path.name} пропущена (VLM отключен) -->"
+            logger.warning(f"VLM отключен (enabled=False). Пропуск обработки изображения: {filename}")
+            return f"<!-- Обработка изображения {filename} пропущена (VLM отключен) -->"
 
         vlm_config = self.ai_service.config.vlm
 
         try:
-            base64_image = await asyncio.to_thread(self._encode_image, file_path)
+            base64_image = base64.b64encode(file_bytes).decode("utf-8")
         except Exception as exc:
-            logger.error(f"Ошибка при чтении/кодировании изображения '{file_path.name}': {exc}")
+            logger.error(f"Ошибка при чтении/кодировании изображения '{filename}': {exc}")
             raise DocumentConversionError(
-                message=f"Не удалось прочитать файл изображения '{file_path.name}': {exc}"
+                message=f"Не удалось прочитать файл изображения '{filename}': {exc}"
             ) from exc
 
-        ext = file_path.suffix.lower().replace(".", "")
+        ext = Path(filename).suffix.lower().replace(".", "")
         mime_type = "image/jpeg" if ext in ["jpg", "jpeg"] else f"image/{ext}"
 
         payload = {
@@ -123,4 +120,4 @@ class VLMImageConverter(BaseDocumentConverter):
             logger.error(f"Некорректная структура JSON от VLM: {exc} | Data: {data}", exc, data)
             raise AIProviderResponseParseError() from exc
 
-        return f"## Содержимое изображения: {file_path.name}\n\n{extracted_text}"
+        return f"## Содержимое изображения: {filename}\n\n{extracted_text}"

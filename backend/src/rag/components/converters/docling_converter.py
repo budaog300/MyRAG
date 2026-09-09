@@ -2,7 +2,7 @@ import asyncio
 import logging
 from pathlib import Path
 from typing import Set, Optional
-
+from io import BytesIO
 from docling.document_converter import DocumentConverter, PdfFormatOption, ImageFormatOption
 from docling.datamodel.pipeline_options import PdfPipelineOptions, PictureDescriptionApiOptions, CodeFormulaVlmOptions
 from docling.datamodel.stage_model_specs import (
@@ -12,7 +12,7 @@ from docling.datamodel.stage_model_specs import (
     VlmEngineType
 )
 from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import InputFormat, DocumentStream
 
 from src.rag.components.converters import BaseDocumentConverter
 from src.services import AIService
@@ -156,29 +156,19 @@ class DoclingDocumentConverter(BaseDocumentConverter):
             )
         )
 
-    async def _convert(self, file_path: Path) -> str:
-        if not file_path.exists():
-            raise DocumentFileNotFoundError(file_path=str(file_path))
-
-        if not self.supports(file_path):
-            raise UnsupportedFileFormatError(extension=file_path.suffix)
+    async def _convert(self, file_bytes: bytes, filename: str) -> str:
+        if not self.supports(filename):
+            raise UnsupportedFileFormatError(extension=Path(filename).suffix)
         try:
-            result = await asyncio.to_thread(self.converter.convert, str(file_path))
+            stream = DocumentStream(name=filename, stream=BytesIO(file_bytes))
+            result = await asyncio.to_thread(self.converter.convert, stream)
             markdown = result.document.export_to_markdown()
             return markdown
-
         except BaseAppException:
             raise
         except Exception as exc:
-            logger.exception(
-                "Ошибка конвертации файла '%s' через %s",
-                file_path.name,
-                self.__class__.__name__,
-            )
+            logger.exception("Ошибка конвертации файла '%s' через %s", filename, self.__class__.__name__)
             exc_str = str(exc).lower()
             if "http" in exc_str or "connection" in exc_str or "api" in exc_str:
                 raise VLMProviderServiceError(details=str(exc)) from exc
-
-            raise DocumentConversionError(
-                message=f"Ошибка обработки файла '{file_path.name}': {exc}"
-            ) from exc
+            raise DocumentConversionError(message=f"Ошибка обработки файла '{filename}': {exc}") from exc

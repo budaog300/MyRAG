@@ -18,7 +18,6 @@ async def process_document_task(
     s3_service: S3Service,
     repos: RepositoryContainer
 ) -> None:
-    temp_file_path: Path | None = None
     token = task_id_ctx.set(task.task_id)
     logger.info("Начинаем обработку документа %s (%s)", task.document_id, task.original_filename)
 
@@ -31,24 +30,11 @@ async def process_document_task(
         await repos.document_repo.session.commit()
         file_bytes = await s3_service.download_file(object_key=task.s3_key)
 
-        # ---------- Создаём временный файл в отдельном потоке -----------
-        suffix = Path(task.original_filename).suffix 
-        def create_temp_file() -> Path:
-            with tempfile.NamedTemporaryFile(mode="wb", suffix=suffix, delete=False) as temp_file:
-                temp_file.write(file_bytes) 
-                return Path(temp_file.name)
-        temp_file_path = await asyncio.to_thread(create_temp_file)
-        logger.debug("Создан временный файл: document_id=%s, path=%s", task.document_id, temp_file_path)
-        # ----------------------------------------------------------------
-
         raw_doc = RawDocumentSchema(
-            source=str(temp_file_path),
+            source=task.original_filename,
             file_bytes=file_bytes,
             document_id=task.document_id,
-            content_hash=task.content_hash,
-            metadata={
-                "original_filename": task.original_filename,
-            }
+            content_hash=task.content_hash
         )
         await document_service.ingest_files(
             collection_name=str(task.collection_id),
@@ -75,9 +61,3 @@ async def process_document_task(
         raise
     finally:
         task_id_ctx.reset(token)
-        if temp_file_path is not None: 
-            try:
-                await asyncio.to_thread(temp_file_path.unlink, missing_ok=True) 
-                logger.debug("Временный файл удалён: document_id=%s, path=%s", task.document_id, temp_file_path)
-            except Exception: 
-                logger.exception("Не удалось удалить временный файл: document_id=%s, path=%s", task.document_id, temp_file_path)

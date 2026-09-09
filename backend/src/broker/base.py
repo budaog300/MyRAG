@@ -69,11 +69,7 @@ class BaseRabbitMQ:
             if not self.channel or self.channel.is_closed:
                 logger.debug("Проверка RabbitMQ: канал закрыт")
                 return False
-
-            await self.channel.declare_queue(
-                name="",
-                passive=True,
-            )
+            await self.channel.declare_queue(name=self.queue_name, passive=True)
             logger.debug("Проверка RabbitMQ успешно выполнена")
             return True
         except Exception as exc:

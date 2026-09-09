@@ -39,7 +39,7 @@ class ExcelConverter(BaseDocumentConverter):
         self,
         wb_original: openpyxl.Workbook,
         sheet_name: str,
-        file_path: Path,
+        filename: str,
     ) -> Optional[str]:
         """
         Изолирует один лист во временный файловый поток (BytesIO),
@@ -63,73 +63,68 @@ class ExcelConverter(BaseDocumentConverter):
             new_ws.append([cell.value for cell in row])
 
         buffer = io.BytesIO()
-        single_sheet_wb.save(buffer)
-        buffer.seek(0)
-        file_name = file_path.name
 
         try:
+            single_sheet_wb.save(buffer)
+            buffer.seek(0)
             doc_stream = DocumentStream(name=f"{sheet_name}.xlsx", stream=buffer)
             docling_result = self._docling_converter.convert(doc_stream)
             raw_markdown = docling_result.document.export_to_markdown()
 
             context_header = (
-                f"# Файл: {file_name}\n"
-                f"## Лист: {sheet_name}\n\n"
-                f"> Context: Данные таблицы относятся к документу '{file_name}', раздел '{sheet_name}'.\n\n"
+                f"Context: Данные таблицы относятся к документу '{filename}', лист '{sheet_name}'.\n\n"
             )
 
             return context_header + raw_markdown
 
         except Exception as exc:
-            logger.warning(f"Ошибка обработки листа '{sheet_name}' в файле '{file_name}' через Docling: {exc}")
+            logger.warning(f"Ошибка обработки листа '{sheet_name}' в файле '{filename}' через Docling: {exc}")
             return None
 
         finally:
             buffer.close()
             single_sheet_wb.close()
 
-    def _preprocess_excel(self, file_path: Path) -> str:
+    def _preprocess_excel(self, file_bytes: bytes, filename: str) -> str:
         """Синхронный обход всех листов Excel и сборка в единую строку."""
         try:
-            wb = openpyxl.load_workbook(filename=file_path, data_only=True)
+            file_stream = io.BytesIO(file_bytes)
+            wb = openpyxl.load_workbook(filename=file_stream, data_only=True)
         except (InvalidFileException, zipfile.BadZipFile, KeyError) as exc:
-            logger.error(f"Файл Excel поврежден или зашифрован {file_path.name}: {exc}")
-            raise CorruptedExcelFileError(file_path=file_path.name, details=str(exc)) from exc
+            logger.error(f"Файл Excel поврежден или зашифрован {filename}: {exc}")
+            raise CorruptedExcelFileError(file_path=filename, details=str(exc)) from exc
         except Exception as exc:
-            logger.error(f"Ошибка при открытии Excel файла {file_path.name}: {exc}")
+            logger.error(f"Ошибка при открытии Excel файла {filename}: {exc}")
             raise DocumentConversionError(
-                message=f"Не удалось открыть документ Excel '{file_path.name}': {exc}"
+                message=f"Не удалось открыть документ Excel '{filename}': {exc}"
             ) from exc
 
         processed_sheets: list[str] = []
 
         try:
             for sheet_name in wb.sheetnames:
-                sheet_md = self._process_single_sheet_with_docling(wb, sheet_name, file_path)
+                sheet_md = self._process_single_sheet_with_docling(wb, sheet_name, filename)
                 if sheet_md:
                     processed_sheets.append(sheet_md)
         finally:
             wb.close()
 
         if not processed_sheets:
-            raise EmptyDocumentError(file_path=file_path.name)
+            raise EmptyDocumentError(file_path=filename)
 
         return self.DELIMITER.join(processed_sheets)
 
-    async def _convert(self, file_path: Path) -> str:
-        if not file_path.exists():
-            raise DocumentFileNotFoundError(file_path=str(file_path))
-
-        if not self.supports(file_path):
-            raise UnsupportedFileFormatError(extension=file_path.suffix)
+    async def _convert(self, file_bytes: bytes, filename: str) -> str:
+        if not self.supports(filename):
+            raise UnsupportedFileFormatError(extension=Path(filename).suffix)
         try:
-            markdown_content = await asyncio.to_thread(self._preprocess_excel, file_path)
+            markdown_content = await asyncio.to_thread(self._preprocess_excel, file_bytes, filename)
             return markdown_content
 
         except DocumentConversionError:
             raise
         except Exception as exc:
-            logger.error(f"Непредвиденная ошибка конвертации Excel '{file_path.name}': {exc}")
+            logger.error(f"Непредвиденная ошибка конвертации Excel '{filename}': {exc}")
             raise DocumentConversionError(
-                message=f"Сбой при обработке Excel таблицы '{file_path.name}': {exc}"
+                message=f"Сбой при обработке Excel таблицы '{filename}': {exc}"
             ) from exc

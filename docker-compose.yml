@@ -85,6 +85,8 @@ services:
       - ./env/.env.backend
     ports:
       - "8000:8000"
+    volumes:
+      - ./logs:/app/logs
     depends_on:
       migrations:
         condition: service_completed_successfully
@@ -105,6 +107,8 @@ services:
     command: [ "python", "-m", "src.worker" ]
     env_file:
       - ./env/.env.backend
+    volumes:
+      - ./logs:/app/logs
     depends_on:
       migrations:
         condition: service_completed_successfully

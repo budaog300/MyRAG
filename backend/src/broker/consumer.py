@@ -42,10 +42,10 @@ class RabbitMQConsumer(BaseRabbitMQ):
                         await message.ack()
                         logger.info("Сообщение успешно обработано: message_id=%s, queue=%s", message.message_id, queue_name)
 
-                    except BaseAppException as e:
+                    except BaseAppException as exc:
                         logger.error("Доменная ошибка при обработке сообщения: message_id=%s, queue=%s, ошибка=%s", message.message_id, queue_name, exc, exc_info=True)
                         await message.nack(requeue=False)
-                    except Exception as e:
+                    except Exception as exc:
                         logger.error( "Системная ошибка при обработке сообщения: message_id=%s, queue=%s, ошибка=%s", message.message_id, queue_name, exc, exc_info=True)
                         await message.nack(requeue=True)
 
