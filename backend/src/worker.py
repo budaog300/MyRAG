@@ -17,14 +17,10 @@ logger = logging.getLogger(__name__)
 
 async def main():
     setup_logger()
-    logger.info("Создаем AI конфиг и AI сервис...")
     ai_config = settingsAI.build_ai_config()
-    ai_service = AIService(ai_config)
-    
+    ai_service = AIService(ai_config)    
     repo = QdrantRepository(ai_service.embedder)
     keyword_repo = ElasticRepository()
-
-    logger.info("Инициализируем конвертеры...")
     docling_converter = DoclingDocumentConverter(ai_service)
     text_converter = TextDocumentConverter()
     excel_converter = ExcelConverter()
@@ -36,17 +32,13 @@ async def main():
         image_converter, 
         excel_converter
     ])
-
-    logger.info("Инициализируем сплиттер...")
     splitter = HierarchicalMarkdownSplitter()
-
-    logger.info("Инициализируем DocumentService и S3Service...")
     doc_service = DocumentService(repo, keyword_repo, converter_service, splitter)
     s3_service = S3Service()
-
     consumer = RabbitMQConsumer()
     await consumer.connect()
     await consumer.setup_topology()
+    logger.info("Воркер готов к обработке документов: queue=%s", settingsRabbitMQ.documents_queue)
 
     async def handle_message(task: IngestDataSchema):
         async with async_session() as session:
@@ -80,5 +72,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
     asyncio.run(main())

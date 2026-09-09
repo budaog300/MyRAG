@@ -24,32 +24,34 @@ class RabbitMQConsumer(BaseRabbitMQ):
 
         try:
             queue = await self.channel.declare_queue(queue_name, durable=True)
-            logger.info(f"Запускаю чтение из очереди: {queue_name}")
+            logger.info("Consumer запущен: queue=%s, model=%s", queue_name, obj.__name__)
 
             async with queue.iterator() as queue_iter:
                 async for message in queue_iter:
-                    logger.info(f"Прочитано сообщение [{message.message_id}] из очереди {queue_name}")
+                    logger.info("Получено сообщение из RabbitMQ: message_id=%s, queue=%s", message.message_id, queue_name)
 
                     try:
                         in_obj = obj.model_validate_json(message.body.decode())
-                    except (ValidationError, Exception) as e:
-                        logger.error(f"Ошибка валидации/декодирования сообщения [{message.message_id}] из очереди {queue_name}: {e}")
+                    except (ValidationError, Exception) as exc:
+                        logger.error("Ошибка валидации сообщения RabbitMQ: message_id=%s, queue=%s, ошибка=%s", message.message_id, queue_name, exc, exc_info=True)
                         await message.nack(requeue=False)
                         continue
 
                     try:
                         await func(in_obj)
                         await message.ack()
+                        logger.info("Сообщение успешно обработано: message_id=%s, queue=%s", message.message_id, queue_name)
+
                     except BaseAppException as e:
-                        logger.error(f"Доменная ошибка при обработке сообщения {message.message_id}: {e}")
+                        logger.error("Доменная ошибка при обработке сообщения: message_id=%s, queue=%s, ошибка=%s", message.message_id, queue_name, exc, exc_info=True)
                         await message.nack(requeue=False)
                     except Exception as e:
-                        logger.error(f"Системная ошибка при обработке сообщения {message.message_id}: {e}")
+                        logger.error( "Системная ошибка при обработке сообщения: message_id=%s, queue=%s, ошибка=%s", message.message_id, queue_name, exc, exc_info=True)
                         await message.nack(requeue=True)
 
         except aio_pika.exceptions.CONNECTION_EXCEPTIONS:
-            logger.warning(f"Потеряно соединение с RabbitMQ при чтении из очереди {queue_name}")
+            logger.error("Потеряно соединение с RabbitMQ: queue=%s", queue_name, exc_info=True)
             raise
-        except Exception as e:
-            logger.error(f"Критическая ошибка в consumer для очереди {queue_name}: {e}")
+        except Exception as exc:
+            logger.error("Критическая ошибка Consumer RabbitMQ: queue=%s, ошибка=%s", queue_name, exc, exc_info=True)
             raise

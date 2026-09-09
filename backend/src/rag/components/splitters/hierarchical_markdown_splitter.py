@@ -93,6 +93,16 @@ class HierarchicalMarkdownSplitter(BaseDocumentSplitter):
             actual_parent_chunk_overlap
         )
 
+        logger.info(
+            "Начало разбиения документа: document_id=%s, размер текста=%d, parent_chunk_size=%d, parent_overlap=%d, chunk_size=%d, chunk_overlap=%d",
+            doc.document_id,
+            len(markdown_text),
+            actual_parent_chunk_size,
+            actual_parent_chunk_overlap,
+            actual_chunk_size,
+            actual_chunk_overlap,
+        )
+
         if not markdown_text or not markdown_text.strip():
             logger.warning("Попытка нарезки пустого текста для doc_id: %s", getattr(doc, "doc_id", "unknown"))
             raise EmptyTextToSplitError(doc_id=str(getattr(doc, "doc_id", "unknown")))
@@ -120,6 +130,7 @@ class HierarchicalMarkdownSplitter(BaseDocumentSplitter):
         
         final_chunks: List[RAGDocument] = []
         sections = markdown_text.split(self.delimiter)
+        logger.debug("Документ document_id=%s разделен на %d секций", doc.document_id, len(sections))
         try:
             for section_idx, section in enumerate(sections):
                 if not section.strip():
@@ -191,12 +202,17 @@ class HierarchicalMarkdownSplitter(BaseDocumentSplitter):
                             final_chunks.append(child_doc)
 
         except Exception as exc:
-            logger.error(f"Сбой во время разбиения документа '{doc.document_id}': {exc}")
+            logger.error("Сбой во время разбиения документа document_id=%s: %s", doc.document_id, exc, exc_info=True)
             raise TextSplittingError(
                 message=f"Ошибка при иерархическом разбиении документа '{doc.document_id}': {exc}"
             ) from exc
 
+        parents_count = sum(1 for chunk in final_chunks if chunk.is_parent)
+        children_count = len(final_chunks) - parents_count
+
         if not final_chunks:
-            logger.warning(f"В результате разбиения документа {doc.document_id} не создано ни одного чанка")
+            logger.warning("В результате разбиения документа document_id=%s не создано ни одного чанка", doc.document_id)
+        else:
+            logger.info("Разбиение документа завершено: document_id=%s, всего чанков=%d, parent=%d, child=%d", doc.document_id, len(final_chunks), parents_count, children_count)
             
         return final_chunks

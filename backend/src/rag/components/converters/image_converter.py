@@ -1,4 +1,5 @@
 import base64
+import logging
 import asyncio
 from pathlib import Path
 from typing import Set
@@ -15,7 +16,8 @@ from src.core.exceptions.converter_exceptions import (
     DocumentFileNotFoundError,
     UnsupportedFileFormatError
 )
-from src.core.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 class VLMImageConverter(BaseDocumentConverter):

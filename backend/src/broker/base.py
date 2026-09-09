@@ -16,23 +16,27 @@ class BaseRabbitMQ:
 
     async def connect(self, prefetch_count: int = 10) -> None:
         try:
-            logger.info("Подключаюсь к RabbitMQ...")
+            logger.info("Подключение к RabbitMQ: prefetch_count=%d", prefetch_count)
             self.connection = await aio_pika.connect_robust(self.url)
             self.channel = await self.connection.channel()
             await self.channel.set_qos(prefetch_count=prefetch_count)
             logger.info("Соединение с RabbitMQ успешно установлено")
         except aio_pika.exceptions.CONNECTION_EXCEPTIONS:
-            logger.warning("Ошибка при подключении к RabbitMQ")
+            logger.error("Ошибка подключения к RabbitMQ", exc_info=True)
             raise
-        except Exception as e:
-            logger.error(f"Ошибка при установке соединения с RabbitMQ -> {e}")
+        except Exception as exc:
+            logger.error("Ошибка при установке соединения с RabbitMQ: %s", exc, exc_info=True)
             raise
 
     async def close(self) -> None:
         if self.connection and not self.connection.is_closed:
-            logger.info("Закрываю соединение с RabbitMQ...")
-            await self.connection.close()
-            logger.info("Соединение с RabbitMQ закрыто")
+            logger.info("Закрытие соединения с RabbitMQ")
+            try:
+                await self.connection.close()
+                logger.info("Соединение с RabbitMQ закрыто")
+            except Exception as exc:
+                logger.error("Ошибка при закрытии соединения с RabbitMQ: %s", exc, exc_info=True)
+                raise
 
     async def setup_topology(
         self,
@@ -52,15 +56,26 @@ class BaseRabbitMQ:
             )
             queue = await self.channel.declare_queue(name=queue_name, durable=True)
             await queue.bind(exchange=exchange, routing_key=routing_key)
-        except Exception as e:
-            logger.error("Ошибка при настройке топологии RabbitMQ: %s", e)
+            logger.info("Топология успешно настроена: exchange=%s, queue=%s, routing_key=%s", exchange_name, queue_name, routing_key)
+        except Exception as exc:
+            logger.error(
+                "Ошибка настройки топологии RabbitMQ: exchange=%s, queue=%s, routing_key=%s, ошибка=%s",
+                exchange_name, queue_name, routing_key, exc, exc_info=True,
+            )
             raise
 
     async def ping(self) -> bool:
         try:
-            if self.channel.is_closed:
+            if not self.channel or self.channel.is_closed:
+                logger.debug("Проверка RabbitMQ: канал закрыт")
                 return False
-            await self.channel.queue_declare(queue='', passive=True)
+
+            await self.channel.declare_queue(
+                name="",
+                passive=True,
+            )
+            logger.debug("Проверка RabbitMQ успешно выполнена")
             return True
-        except Exception:
+        except Exception as exc:
+            logger.warning("Проверка RabbitMQ завершилась ошибкой: %s", exc)
             return False

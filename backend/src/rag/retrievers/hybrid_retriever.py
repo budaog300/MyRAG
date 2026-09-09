@@ -32,15 +32,24 @@ class HybridRetriever(BaseRetriever):
 
         for res in responses:
             if isinstance(res, Exception):
-                logger.error(f"Один из ретриверов упал во время гибридного поиска: {res}", exc_info=res)
+                logger.error("Один из ретриверов завершился с ошибкой: тип=%s, ошибка=%s", type(res).__name__, res)
                 errors.append(res)
             elif isinstance(res, list):
                 valid_results.append(res)
 
         if len(errors) == len(self.retrievers):
+            logger.error("Один из ретриверов завершился с ошибкой: тип=%s, ошибка=%s", type(res).__name__, res)
             raise HybridRetrieverError(f"Все источники поиска вернули ошибку: {errors}")
 
-        return await self._merge_rrf(valid_results, limit=merge_limit)
+        result = await self._merge_rrf(
+            valid_results,
+            limit=merge_limit,
+        )
+        logger.info("Гибридный поиск завершен: коллекция=%s, источников=%d, объединено=%d, возвращено=%d", collection_name, len(valid_results),
+            sum(len(source) for source in valid_results),
+            len(result),
+        )
+        return result
     
     async def _merge_rrf(
         self,
@@ -60,6 +69,14 @@ class HybridRetriever(BaseRetriever):
                 scores[doc.id].metadata["rrf_score"] += 1 / (k + rank)
         result = sorted(
             scores.values(), key=lambda x: x.metadata["rrf_score"], reverse=True
+        )
+        logger.debug(
+            "RRF-объединение результатов: источников=%d, входных результатов=%d, выходных результатов=%d, уникальных=%d, limit=%d",
+            len(sources),
+            len(result),
+            sum(len(source) for source in sources),
+            len(scores),
+            limit,
         )
         return result[:limit]
 

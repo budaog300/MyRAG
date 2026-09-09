@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from pathlib import Path
 from typing import Set, Optional
 import io
@@ -17,7 +18,8 @@ from src.core.exceptions.converter_exceptions import (
     PipelineInitializationError,
     UnsupportedFileFormatError,
 )
-from src.core.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 class ExcelConverter(BaseDocumentConverter):

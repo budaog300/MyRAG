@@ -51,10 +51,11 @@ class DocumentService:
         all_children: List[Dict[str, Any]] = []
         all_parents: List[Dict[str, Any]] = []
 
-        logger.info(f"Старт индексации {len(documents)} документов в коллекцию '{collection_name}'")
+        logger.info("Начата индексация документов: коллекция=%s, документов=%d", collection_name, len(documents))
 
         for doc in documents:
             try:
+                logger.info("Начата обработка документа: collection=%s, source=%s", collection_name, doc.source)
                 markdown_text = await self.converter_service.convert_to_markdown(doc.source)
 
                 chunks = self.splitter.split(
@@ -64,26 +65,34 @@ class DocumentService:
                     chunk_overlap=chunk_overlap,
                 )
 
+                children_count = 0
+                parents_count = 0
+
                 for chunk in chunks:
                     chunk_dict = chunk.model_dump() if hasattr(chunk, "model_dump") else chunk
+
                     if chunk_dict.get("is_parent"):
                         all_parents.append(chunk_dict)
+                        parents_count += 1
                     else:
                         all_children.append(chunk_dict)
-
+                        children_count += 1
+                logger.info("Документ обработан: source=%s, children=%d, parents=%d", doc.source, children_count, parents_count)
             except (DocumentConversionError, TextSplittingError) as exc:
-                logger.error(f"Пропущена обработка документа {doc.source} из-за ошибки: {exc}")
+                logger.error("Ошибка обработки документа: source=%s, ошибка=%s", doc.source, exc, exc_info=True)
                 raise
             except Exception as exc:
-                logger.error(f"Непредвиденная ошибка при обработке документа {doc.source}: {exc}")
+                logger.error("Непредвиденная ошибка обработки документа: source=%s, ошибка=%s", doc.source, exc, exc_info=True)
                 raise DocumentIngestionError(
                     collection_name=collection_name,
                     details=f"Сбой при подготовке документа '{doc.source}': {exc}",
                 ) from exc
 
         if not all_children and not all_parents:
-            logger.warning(f"После обработки документов в коллекции '{collection_name}' не сформировано ни одного чанка")
+            logger.warning("После обработки документов чанки не сформированы: коллекция=%s", collection_name)
             return
+
+        logger.info("Подготовка чанков завершена: коллекция=%s, children=%d, parents=%d", collection_name, len(all_children), len(all_parents))
 
         tasks = [
             self.repo.upsert(collection_name, all_children, is_vector=True),
@@ -92,19 +101,17 @@ class DocumentService:
 
         if all_parents:
             parents_collection_name = f"{collection_name}_parents"
-            tasks.extend([
-                self.repo.upsert(parents_collection_name, all_parents, is_vector=False),
-            ])
+            tasks.append(self.repo.upsert(parents_collection_name, all_parents, is_vector=False))
 
         try:
+            logger.info("Начато сохранение чанков: коллекция=%s, children=%d, parents=%d", collection_name, len(all_children), len(all_parents))
             await asyncio.gather(*tasks)
-            logger.info(
-                f"Успешно сохранены чанки в коллекцию '{collection_name}' (Children: {len(all_children)}, Parents: {len(all_parents)})"
-            )
+            logger.info("Индексация документов успешно завершена: коллекция=%s, children=%d, parents=%d", collection_name, len(all_children), len(all_parents))
+
         except BaseAppException:
             raise
         except Exception as exc:
-            logger.error(f"Ошибка при сохранении чанков в базы данных для коллекции '{collection_name}': {exc}")
+            logger.error("Ошибка сохранения чанков: коллекция=%s, ошибка=%s", collection_name, exc, exc_info=True)
             raise DocumentIngestionError(
                 collection_name=collection_name,
                 details=f"Ошибка сохранения данных в хранилища: {exc}",

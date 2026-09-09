@@ -21,23 +21,24 @@ class RabbitMQPublisher(BaseRabbitMQ):
             raise RuntimeError("Канал RabbitMQ не инициализирован. Вызовите connect() перед публикацией.")
 
         try:
+            message_id = str(uuid4())
+            logger.info("Публикация сообщения в RabbitMQ: exchange=%s, routing_key=%s, message_id=%s, type=%s", exchange_name, routing_key, message_id, obj.__class__.__name__)
             exchange = await self.channel.declare_exchange(
                 exchange_name, aio_pika.ExchangeType.DIRECT, durable=True
             )
             
             message = aio_pika.Message(
-                message_id=str(uuid4()),
+                message_id=message_id,
                 body=obj.model_dump_json().encode(),
                 content_type="application/json",
                 delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
             )
             
             await exchange.publish(message, routing_key=routing_key, mandatory=True)
-            logger.info(f"Данные {obj.__class__.__name__} успешно опубликованы по ключу: {routing_key}")
-
-        except aio_pika.exceptions.AMQPException as e:
-            logger.error(f"Ошибка AMQP при публикации в exchange '{exchange_name}': {e}")
+            logger.info("Сообщение успешно опубликовано: exchange=%s, routing_key=%s, message_id=%s", exchange_name, routing_key, message_id)
+        except aio_pika.exceptions.AMQPException as exc:
+            logger.error("AMQP ошибка при публикации сообщения: exchange=%s, routing_key=%s, message_id=%s, ошибка=%s", exchange_name, routing_key, message_id, exc, exc_info=True)
             raise
-        except Exception as e:
-            logger.error(f"Ошибка при публикации в exchange '{exchange_name}': {e}")
+        except Exception as exc:
+            logger.error("Ошибка публикации сообщения в RabbitMQ: exchange=%s, routing_key=%s, message_id=%s, ошибка=%s", exchange_name, routing_key, message_id, exc, exc_info=True)
             raise

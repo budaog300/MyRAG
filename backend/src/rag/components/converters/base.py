@@ -1,9 +1,11 @@
 import time
+import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Set
 from src.core.constants import DOCUMENT_DELIMITER
-from src.core.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 class BaseDocumentConverter(ABC):

@@ -40,7 +40,7 @@ class RAGService:
         top_k: int = 5,
         only_context: bool = True,
         **kwargs,
-    ) -> Tuple[Optional[str], List[RAGDocument]]:
+    ) -> Tuple[Optional[str], List[RAGDocument]]:        
         try:
             docs = await self.retriever.retrieve(
                 query,
@@ -51,15 +51,15 @@ class RAGService:
         except BaseAppException:
             raise
         except Exception as exc:
-            logger.error(f"Ошибка при выполнении ретрива для коллекции '{collection_name}': {exc}", exc_info=True)
+            logger.error("Ошибка ретрива: collection=%s, ошибка=%s", collection_name, exc, exc_info=True)
             raise RAGException(
                 message=f"Ошибка при поиске документов по коллекции '{collection_name}': {exc}"
             ) from exc
 
-        logger.info(f"Получено документов после ретрива: {len(docs)}")
+        logger.info("Ретрив завершён: collection=%s, документов=%d", collection_name, len(docs))
 
         if not docs:
-            logger.warning(f"Ретривер не вернул документов по запросу: '{query}'")
+            logger.warning("Ретривер не вернул документов: collection=%s", collection_name)
             raise NoRelevantDocumentsFoundError(query=query, collection_name=collection_name)
 
         if self.ai_service.reranker:
@@ -69,31 +69,31 @@ class RAGService:
                     documents=docs,
                     top_k=top_k,
                 )
-                logger.info(f"Получено документов после реранкинга: {len(docs)}")
+                logger.info("Реранкинг завершён: документов=%d, top_k=%d", len(docs), top_k)
             except BaseAppException:
                 raise
             except Exception as exc:
-                logger.error(f"Ошибка при реранкинге документов: {exc}", exc_info=True)
+                logger.error("Ошибка реранкинга: ошибка=%s", exc, exc_info=True)
                 if not docs:
                     raise RAGException(message=f"Сбой реранкинга: {exc}") from exc
 
         if not docs:
-            logger.warning(f"После реранкинга не осталось подходящих документов для запроса: '{query}'")
+            logger.warning(f"После реранкинга не осталось подходящих документов для запроса: collection='%s'", collection_name)
             raise NoRelevantDocumentsFoundError(query=query, collection_name=collection_name)
 
         if self.enricher:
             try:
                 docs = await self.enricher.enrich(docs, collection_name)
-                logger.info(f"Получено документов после обогащения контекста: {len(docs)}")
+                logger.info("Обогащение контекста завершено: документов=%d", len(docs))
             except BaseAppException:
                 raise
             except Exception as exc:
-                logger.error(f"Ошибка при обогащении контекста: {exc}", exc_info=True)
+                logger.error("Ошибка обогащения контекста: ошибка=%s", exc, exc_info=True)
                 raise ContextEnrichmentError(details=str(exc)) from exc
 
         final_docs = docs[:top_k]
         if only_context:
-            logger.info(f"Возврат найденных чанков без вызова LLM (only_context={only_context})")
+            logger.info("RAG завершён без LLM: документов=%d", len(final_docs))
             return None, final_docs
 
         context_text = "\n\n---\n\n".join([doc.content for doc in final_docs])
@@ -111,10 +111,11 @@ class RAGService:
                 system_prompt=system_prompt,
                 **kwargs,
             )
+            logger.info("Генерация ответа LLM завершена: документов в контексте=%d", len(final_docs))
         except BaseAppException:
             raise
         except Exception as exc:
-            logger.error(f"Ошибка генерации ответа через LLM: {exc}", exc_info=True)
+            logger.error("Ошибка генерации ответа LLM: ошибка=%s", exc, exc_info=True)
             raise RAGException(message=f"Ошибка при генерации ответа LLM: {exc}") from exc
 
         return answer, final_docs
@@ -131,6 +132,7 @@ class RAGService:
         max_tokens: int = 1024,
         only_context: bool = True        
     ) -> Dict[str, Any]:
+        logger.info("Запуск RAG: collection_id=%s, only_context=%s", collection_id, only_context)
         if not query or not query.strip():
             raise EmptyQueryError()
 
@@ -139,8 +141,7 @@ class RAGService:
         if collection is None:
             raise CollectionNotFoundError(str(collection_id))
 
-        logger.info(f"Запуск RAG пайплайна для коллекции '{collection.name}' (id={str(collection.id)})'")
-
+        logger.info("Начат RAG-пайплайн: collection=%s, retrieve_limit=%d, merge_limit=%d, top_k=%d", collection.id, retrieve_limit, merge_limit, top_k)
         answer, documents = await self._full_step(
             query=query.strip(),
             collection_name=str(collection.id),
@@ -151,7 +152,7 @@ class RAGService:
             max_tokens=max_tokens,
             only_context=only_context,
         )
-
+        logger.info("RAG-пайплайн завершён: collection_id=%s, документов=%d, LLM=%s", collection_id, len(documents), not only_context)
         return {
             "answer": answer,
             "documents": documents,

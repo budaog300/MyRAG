@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 async def base_app_exception_handler(request: Request, exc: BaseAppException) -> JSONResponse:
-    logger.error(f"Domain Exception при вызове {request.method} [{exc.__class__.__name__}]: {exc.message}", exc_info=True)
+    logger.error("Domain Exception при вызове %s [%s]: %s", request.method, exc.__class__.__name__, exc.message, exc_info=True)
     response_content = {"detail": exc.message}
     if exc.extra:
         response_content["extra"] = exc.extra
@@ -19,7 +19,7 @@ async def base_app_exception_handler(request: Request, exc: BaseAppException) ->
 
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    logger.error(f"Необработанная ошибка при вызове {request.method} {request.url.path}: {exc}", exc_info=True)
+    logger.error("Необработанная ошибка при вызове %s [%s]: %s", request.method, request.url.path, exc, exc_info=True)
     
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

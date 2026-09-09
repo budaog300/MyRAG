@@ -1,3 +1,4 @@
+import uuid
 import time
 import logging
 from fastapi import FastAPI, Request
@@ -13,6 +14,7 @@ from src.api.routes import router_vector_repo, router_keyword_repo, router_admin
 from src.broker.publisher import RabbitMQPublisher
 from src.db.database import engine
 from src.core.logger import setup_logger
+from src.core.request_context import request_id_ctx
 
 logger = logging.getLogger(__name__)
 
@@ -72,11 +74,29 @@ app.include_router(router_health, prefix="/api/v1")
 
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
+    request_id = str(uuid.uuid4())
+    token = request_id_ctx.set(request_id)
     start = time.perf_counter()
-    response = await call_next(request)
-    process_time = time.perf_counter() - start
-    response.headers["X-Process-Time"] = str(process_time)
-    return response
+    try:
+        response = await call_next(request)
+
+        process_time = time.perf_counter() - start
+        response.headers["X-Process-Time"] = str(process_time)
+        response.headers["X-Request-ID"] = request_id
+
+        logger.info(
+            "Запрос завершён: request_id=%s, метод=%s, путь=%s, статус=%d, время=%.2f сек.",
+            request_id,
+            request.method,
+            request.url.path,
+            response.status_code,
+            process_time,
+        )
+
+        return response
+
+    finally:
+        request_id_ctx.reset(token)
 
 
 if __name__ == "__main__":

@@ -44,7 +44,7 @@ class AIService:
         except AIProviderError:
             raise
         except Exception as exc:
-            logger.error("Ошибка инициализации LLM провайдера: %s", exc)
+            logger.error("Ошибка инициализации LLM провайдера: %s", exc, exc_info=True)
             raise AIServiceInitializationError(service_name="LLM", details=str(exc)) from exc
 
     def _init_embedder(self, config: ModelConfig) -> BaseEmbedderProvider:
@@ -57,7 +57,7 @@ class AIService:
         except AIProviderError:
             raise
         except Exception as exc:
-            logger.error("Ошибка инициализации Embedder провайдера: %s", exc)
+            logger.error("Ошибка инициализации Embedder провайдера: %s", exc, exc_info=True)
             raise AIServiceInitializationError(service_name="Embedder", details=str(exc)) from exc
 
     def _init_vlm(self, config: VLMConfig) -> BaseVLMProvider:
@@ -70,7 +70,7 @@ class AIService:
         except AIProviderError:
             raise
         except Exception as exc:
-            logger.error("Ошибка инициализации VLM провайдера: %s", exc)
+            logger.error("Ошибка инициализации VLM провайдера: %s", exc, exc_info=True)
             raise AIServiceInitializationError(service_name="VLM", details=str(exc)) from exc
 
     def _init_reranker(self, config: ModelConfig) -> BaseRerankerProvider:
@@ -83,7 +83,7 @@ class AIService:
         except AIProviderError:
             raise
         except Exception as exc:
-            logger.error("Ошибка инициализации Reranker провайдера: %s", exc)
+            logger.error("Ошибка инициализации Reranker провайдера: %s", exc, exc_info=True)
             raise AIServiceInitializationError(service_name="Reranker", details=str(exc)) from exc
 
     def get_llm(self) -> BaseLLMProvider:

@@ -17,10 +17,7 @@ class EmbedderProvider(BaseAIProvider, BaseEmbedderProvider):
         data = await self._post(payload)
         
         try:
-            embeddings = [item["embedding"] for item in data["data"]]
-            if len(embeddings) != len(texts):
-                logger.error("Количество эмбеддингов не соответствует количеству исходных чанков")
-                raise EmbedderError("Количество эмбеддингов не соответствует количеству исходных чанков")
+            embeddings = [item["embedding"] for item in data["data"]]            
             return embeddings
         except (KeyError, TypeError) as e:
             raise EmbedderError(f"Не удалось извлечь эмбеддинги из ответа: {e}")

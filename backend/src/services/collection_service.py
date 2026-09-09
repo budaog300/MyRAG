@@ -52,40 +52,37 @@ class CollectionService:
                 details="Размерность вектора (size) должна быть больше 0.",
             )
 
-        logger.info(f"Создание коллекции '{name}' (size={size}, distance={distance})")
-
         collection = await self.db_repo.collection_repo.create(
             name=name,
             size=size,
             distance=distance,
             description=description,
-        )
-
-        await self.db_repo.collection_repo.session.commit()
-
-        collection_name = str(collection.id)
-       
+        )        
+        collection_name = str(collection.id)       
         try:
             await asyncio.gather(
                 self.vector_repo.create_collection(collection_name=collection_name, size=size, distance=distance),
                 self.keyword_repo.create_index(index=collection_name),
             )
-            logger.info(f"Коллекция '{collection.name}' создана")
+            logger.info("Коллекция '%s' успешно создана", collection.name)
+            await self.db_repo.collection_repo.session.commit()
             return collection
         except BaseAppException:
             raise
         except Exception as exc:
-            logger.error(f"Ошибка при создании коллекции '{name}': {exc}")
+            logger.error("Ошибка при создании коллекции '%s': %s", name, exc, exc_info=True)
+            await self.db_repo.collection_repo.session.rollback()
             raise CollectionOperationError(operation="create", collection_name=name, details=str(exc)) from exc
 
     async def get_collections(self) -> List[CollectionModel]:
         try:
             collections = await self.db_repo.collection_repo.get_all()
+            logger.info("Получен список коллекций: количество=%d", len(collections))
             return collections
         except BaseAppException:
             raise
         except Exception as exc:
-            logger.error(f"Ошибка при получении списка коллекций: {exc}")
+            logger.error("Ошибка при получении списка коллекций: %s", exc, exc_info=True)
             raise CollectionOperationError(
                 operation="get_collections",
                 collection_name="all",
@@ -105,7 +102,7 @@ class CollectionService:
                 self.vector_repo.get_collection_details(collection_name),
                 self.keyword_repo.get_index_details(collection_name),
             )
-
+            logger.info("Получены детали коллекции: collection_id=%s", collection_id)
             return {
                 "id": collection_name,
                 "name": collection.name,
@@ -120,7 +117,7 @@ class CollectionService:
         except BaseAppException:
             raise
         except Exception as exc:
-            logger.error(f"Ошибка при получении деталей коллекции '{collection_id}': {exc}")
+            logger.error("Ошибка при получении деталей коллекции '%s': %s", collection_id, exc, exc_info=True)
             raise CollectionOperationError(
                 operation="get_details",
                 collection_name=collection_id,
@@ -133,7 +130,6 @@ class CollectionService:
         name: str | None,
         description: str | None,
     ) -> CollectionModel | None:
-        logger.info(f"Обновляем коллекцию '{collection_id}'")
         try:
             collection = await self.db_repo.collection_repo.update(
                 collection_id=collection_id,
@@ -146,18 +142,17 @@ class CollectionService:
             await self.db_repo.collection_repo.session.commit()
             logger.info("Коллекция '%s' обновлена: name=%s, description=%s", collection.id, name, description)
             return await self.get_collection_details(collection_id)
-
         except BaseAppException:
             raise
         except Exception as exc:
-            logger.error(f"Ошибка при обновлении коллекции '{collection_id}': {exc}")
+            logger.error("Ошибка при обновлении коллекции '%s': %s", collection_id, exc, exc_info=True)
+            await self.db_repo.collection_repo.session.rollback()
             raise CollectionOperationError(operation="update", collection_name=str(collection_id), details=str(exc)) from exc
        
     async def clear_collection(self, collection_id: UUID) -> None:
         collection = await self.db_repo.collection_repo.get_by_id(collection_id)
         if collection is None:
             raise CollectionNotFoundError(str(collection_id))
-        logger.info(f"Очистка содержимого коллекции '{collection.name}'")
         try:
             documents = await self.db_repo.document_repo.get_all(collection.id)
             collection_name = str(collection_id)
@@ -172,11 +167,12 @@ class CollectionService:
             for document in documents:
                 await self.db_repo.document_repo.delete(document)
             await self.db_repo.document_repo.session.commit()
-            logger.info(f"Коллекция '{collection.name}' очищена. Удалено S3 файлов: {len(documents)}")
+            logger.info("Коллекция '%s' очищена: удалено документов=%d", collection.name, len(documents))
         except BaseAppException:
             raise
         except Exception as exc:
-            logger.error(f"Ошибка при очистке коллекции '{collection.name}': {exc}")
+            logger.error("Ошибка при очистке коллекции '%s': %s", collection.name, exc, exc_info=True)
+            await self.db_repo.document_repo.session.rollback()
             raise CollectionOperationError(operation="clear", collection_name=collection.name, details=str(exc)) from exc
 
     async def delete_collection(self, collection_id: UUID) -> None:
@@ -184,7 +180,6 @@ class CollectionService:
         if collection is None:
             raise CollectionNotFoundError(collection_id)
         collection_name = collection.name
-        logger.info(f"Удаление коллекции '{collection.name}")
         try:
             documents = await self.db_repo.document_repo.get_all(collection.id)
             collection_name = str(collection_id)
@@ -197,13 +192,13 @@ class CollectionService:
                 ]
             )
             await self.db_repo.collection_repo.delete(collection)
-            await self.db_repo.collection_repo.session.commit()
-            
-            logger.info(f"Коллекция '{collection_name}' очищена. Удалено S3 файлов: {len(documents)}")
+            await self.db_repo.collection_repo.session.commit()            
+            logger.info("Коллекция '%s' успешно удалена: документов=%d", collection_name, len(documents))
         except BaseAppException:
             raise
         except Exception as exc:
-            logger.error(f"Ошибка при удалении коллекции '{collection_name}': {exc}")
+            logger.error("Ошибка при удалении коллекции '%s': %s", collection_name, exc, exc_info=True)
+            await self.db_repo.collection_repo.session.rollback() 
             raise CollectionOperationError(operation="delete", collection_name=collection_name, details=str(exc)) from exc
 
     async def get_documents(
@@ -226,11 +221,19 @@ class CollectionService:
             total = await self.db_repo.document_repo.count_by_collection_id(
                 collection_id
             )
+            logger.info(
+                "Получены документы коллекции: collection_id=%s, документов=%d, всего=%d, limit=%s, offset=%d",
+                collection_id,
+                len(documents),
+                total,
+                limit,
+                offset,
+            )
             return documents, total
         except BaseAppException:
             raise
         except Exception as exc:
-            logger.error(f"Ошибка при получении списка документов из коллекции '{collection_id}': {exc}")
+            logger.error("Ошибка при получении документов коллекции '%s': %s", collection_id, exc, exc_info=True)
             raise CollectionOperationError(
                 operation="get_details",
                 collection_name=collection_id,
@@ -255,12 +258,12 @@ class CollectionService:
 
             if document is None:
                 raise DocumentNotFoundError(str(document_id), str(collection_id))
-            
+            logger.info("Документ получен: collection_id=%s, document_id=%s", collection_id, document_id,)
             return document
         except BaseAppException:
             raise
         except Exception as exc:
-            logger.error(f"Ошибка при получении документа {document_id} из коллекции '{collection_id}': {exc}")
+            logger.error("Ошибка при получении документа '%s' из коллекции '%s': %s", document_id, collection_id, exc, exc_info=True)
             raise CollectionOperationError(
                 operation="get_details",
                 collection_name=collection_id,
@@ -273,8 +276,6 @@ class CollectionService:
         collection = await self.db_repo.collection_repo.get_by_id(collection_id)
         if collection is None:
             raise CollectionNotFoundError(collection_id)
-
-        logger.info(f"Удаление документа с document_id='{document_id}' из коллекции '{collection.name}'")
         try:
             document = await self.db_repo.document_repo.get_by_id(
                 collection_id=collection_id,
@@ -298,14 +299,12 @@ class CollectionService:
             )
             await self.db_repo.document_repo.delete(document)
             await self.db_repo.document_repo.session.commit()
-
-            logger.info(f"Документ '{document_id}' успешно удален из коллекции '{collection_name}'.")
-
+            logger.info("Документ '%s' успешно удален из коллекции '%s'", document_id, collection_name)
         except BaseAppException:
             raise
         except Exception as exc:
             logger.error("Ошибка удаления документа '%s' из коллекции '%s': %s", document_id, collection.name, exc, exc_info=True)
-
+            await self.db_repo.document_repo.session.rollback()
             raise CollectionOperationError(
                 operation="delete_document",
                 collection_name=collection.name,
