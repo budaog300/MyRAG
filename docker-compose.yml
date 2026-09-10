@@ -3,7 +3,7 @@ services:
   postgres:
     image: postgres:17
     env_file:
-      - ./env/.env.backend
+      - ./env/.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -16,7 +16,7 @@ services:
   rabbitmq:
     image: rabbitmq:3-management-alpine
     env_file:
-      - ./env/.env.backend
+      - ./env/.env
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -29,7 +29,7 @@ services:
   minio:
     image: minio/minio:latest
     env_file:
-      - ./env/.env.backend
+      - ./env/.env
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
@@ -43,7 +43,7 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:9.1.2
     env_file:
-      - ./env/.env.backend
+      - ./env/.env
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
@@ -61,7 +61,7 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
     env_file:
-      - ./env/.env.backend
+      - ./env/.env
     restart: unless-stopped
 
   migrations:
@@ -70,7 +70,8 @@ services:
       dockerfile: Dockerfile
     command: [ "alembic", "upgrade", "head" ]
     env_file:
-      - ./env/.env.backend
+      - ./env/.env
+      - ./env/.env.secrets
     depends_on:
       postgres:
         condition: service_healthy
@@ -82,7 +83,8 @@ services:
       dockerfile: Dockerfile
     command: [ "python", "-m", "src.main" ]
     env_file:
-      - ./env/.env.backend
+      - ./env/.env
+      - ./env/.env.secrets
     ports:
       - "8000:8000"
     volumes:
@@ -106,7 +108,8 @@ services:
       dockerfile: Dockerfile
     command: [ "python", "-m", "src.worker" ]
     env_file:
-      - ./env/.env.backend
+      - ./env/.env
+      - ./env/.env.secrets
     volumes:
       - ./logs:/app/logs
     depends_on:
@@ -129,7 +132,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     env_file:
-      - ./env/.env.frontend
+      - ./env/.env
+      - ./env/.env.secrets
     ports:
       - "8080:80"
     depends_on:

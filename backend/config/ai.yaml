@@ -1,0 +1,51 @@
+llm:
+  enabled: true
+  fallback_mode: local
+
+  cloud:
+    model: openai/gpt-4o-mini
+    api_url: https://api.vsegpt.ru/v1/chat/completions
+    api_key_env: VSEGPT_API_KEY
+
+  local:
+    model: qwen2.5:3b
+    api_url: http://ollama:11434/v1/chat/completions
+
+vlm:
+  enabled: true
+  fallback_mode: local
+
+  cloud:
+    model: qwen/qwen3.7-plus
+    api_url: https://api.vsegpt.ru/v1/chat/completions
+    api_key_env: VSEGPT_API_KEY
+
+  local:
+    model: qwen2.5vl:3b
+    api_url: http://ollama:11434/v1/chat/completions
+
+embedding:
+  enabled: true
+  fallback_mode: local
+
+  cloud:
+    model: baai/bge-m3
+    api_url: https://openrouter.ai/api/v1/embeddings
+    api_key_env: OPENROUTER_API_KEY
+
+  local:
+    model: BAAI/bge-m3
+    api_url: http://infinity_embeddings:7997/embeddings
+
+reranker:
+  enabled: true
+  fallback_mode: local
+
+  cloud:
+    model: cohere/rerank-v3.5
+    api_url: https://openrouter.ai/api/v1/rerank
+    api_key_env: OPENROUTER_API_KEY
+
+  local:
+    model: BAAI/bge-reranker-v2-m3
+    api_url: http://infinity_reranker:7998/rerank

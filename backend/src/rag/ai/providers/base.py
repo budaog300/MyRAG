@@ -10,7 +10,8 @@ from src.core.exceptions.provider_exceptions import (
     AIProviderAuthError,
     AIProviderError,
     AIProviderRateLimitError,
-    AIProviderTimeoutError
+    AIProviderTimeoutError,
+    AIProviderUnavailableError
 )
 
 logger = logging.getLogger(__name__)
@@ -48,19 +49,20 @@ class BaseAIProvider:
                 raise AIProviderAuthError(detail)
             elif status_code == 429:
                 raise AIProviderRateLimitError(detail)
+            elif status_code in (500, 502, 503, 504):
+                raise AIProviderUnavailableError(f"AI-провайдер вернул HTTP {status_code}: {detail}")
             else:
                 raise AIProviderError(f"HTTP ошибка {status_code}: {detail}", status_code=502)
-                
         except httpx.TimeoutException as e:
             elapsed = time.perf_counter() - start_time
             logger.error("AI timeout: model=%s, time=%.2fs", self.config.model_name, elapsed)
             raise AIProviderTimeoutError(str(e))
-            
         except httpx.RequestError as e:
             elapsed = time.perf_counter() - start_time
             logger.error("AI network error: model=%s, time=%.2fs, error=%s", self.config.model_name, elapsed, e)
-            raise AIProviderError(f"Сетевая ошибка при запросе к AI-провайдеру: {e}")
-            
+            raise AIProviderUnavailableError(f"Сетевая ошибка при запросе к AI-провайдеру: {e}")
+        except AIProviderError:
+            raise
         except Exception as e:
             elapsed = time.perf_counter() - start_time
             logger.exception("Unexpected AI provider error: model=%s, time=%.2fs", self.config.model_name, elapsed)

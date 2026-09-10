@@ -72,7 +72,7 @@ class DoclingDocumentConverter(BaseDocumentConverter):
     ) -> None:
         vlm_config = self.ai_service.config.vlm
 
-        if vlm_config is None or not vlm_config.enabled:
+        if vlm_config is None or vlm_config.primary is None:
             logger.info("VLM enrichment отключен")
 
             pipeline_options.generate_picture_images = False
@@ -82,17 +82,14 @@ class DoclingDocumentConverter(BaseDocumentConverter):
 
             return
 
-        if vlm_config.mode != EngineMode.API:
+        vlm_config = vlm_config.primary
+
+        if vlm_config.mode != EngineMode.CLOUD:
             raise PipelineInitializationError(
-                reason="Docling VLM enrichment поддерживает только API mode"
+                reason="Docling VLM enrichment поддерживает только CLOUD mode"
             )
 
-        headers = {}
-
-        if vlm_config.api_key:
-            headers["Authorization"] = (
-                f"Bearer {vlm_config.api_key}"
-            )
+        headers={"Authorization": f"Bearer {vlm_config.api_key}", "Content-Type": "application/json"} if vlm_config.api_key else {}
 
         params = {
             "model": vlm_config.model_name,
@@ -113,7 +110,7 @@ class DoclingDocumentConverter(BaseDocumentConverter):
         pipeline_options.picture_description_options = (
             PictureDescriptionApiOptions(
                 url=vlm_config.api_url,
-                headers=headers or None,
+                headers=headers or {},
                 params=params,
                 timeout=vlm_config.timeout,
                 prompt=vlm_config.picture_prompt,
@@ -129,7 +126,7 @@ class DoclingDocumentConverter(BaseDocumentConverter):
 
         engine_options = ApiVlmEngineOptions(
             url=vlm_config.api_url,
-            headers=headers or None,
+            headers=headers or {},
         )
 
         api_config = ApiModelConfig(

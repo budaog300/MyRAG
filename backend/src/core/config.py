@@ -1,8 +1,10 @@
+import os
+from typing import Any
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from src.core.ai_config import AIServiceConfig, ModelConfig, VLMConfig, EngineMode
-from src.core.prompts.generation import RAG_SYSTEM_PROMPT, RAG_USER_PROMPT
-from src.core.prompts.vision import PICTURE_DESCRIPTION_PROMPT, CODE_FORMULA_PROMPT
+from src.core.ai_config import AIProviderConfig, AIServiceConfig, ModelConfig, VLMConfig, EngineMode
+from src.core.utils.config_loader import load_yaml
+from src.core.prompts import PICTURE_DESCRIPTION_PROMPT, CODE_FORMULA_PROMPT
 
 
 class SettingsQdrant(BaseSettings):
@@ -31,73 +33,6 @@ class SettingsElastic(BaseSettings):
             "hosts": self.ELASTIC_URL,
             "api_key": self.ELASTIC_API_KEY,
         }
-
-
-class SettingsAI(BaseSettings):
-    # LLM
-    LLM_ENABLED: bool = True
-    LLM_MODE: EngineMode = EngineMode.API
-    LLM_MODEL: str = "qwen3:4b"
-    LLM_API_URL: str = "http://ollama:11434/v1/chat/completions"
-    LLM_API_KEY: str = ""
-
-    # VLM
-    VLM_ENABLED: bool = True
-    VLM_MODE: EngineMode = EngineMode.API
-    VLM_MODEL: str = "qwen3-vl:2b"
-    VLM_API_URL: str = "http://ollama:11434/v1/chat/completions"
-    VLM_API_KEY: str = ""
-
-    # Embeddings
-    EMBED_ENABLED: bool = True
-    EMBED_MODE: EngineMode = EngineMode.API
-    EMBED_MODEL: str = "bge-m3"
-    EMBED_API_URL: str = "http://ollama:11434/v1/embeddings"
-    EMBED_API_KEY: str = ""
-
-    # Reranker
-    RERANK_ENABLED: bool = True
-    RERANK_MODE: EngineMode = EngineMode.API
-    RERANK_MODEL: str = "qllama/bge-reranker-v2-m3"
-    RERANK_API_URL: str = "http://ollama:11434/v1/embeddings"
-    RERANK_API_KEY: str = ""
-
-    model_config = SettingsConfigDict(env_file=None, extra="ignore")
-
-    def build_ai_config(self) -> AIServiceConfig:
-        """Сборка AIServiceConfig из env-переменных"""
-        return AIServiceConfig(
-            llm=ModelConfig(
-                enabled=self.LLM_ENABLED,
-                mode=EngineMode(self.LLM_MODE),
-                model_name=self.LLM_MODEL,
-                api_url=self.LLM_API_URL,
-                api_key=self.LLM_API_KEY,
-            ) if self.LLM_ENABLED else None,
-            embedder=ModelConfig(
-                enabled=self.EMBED_ENABLED,
-                mode=EngineMode(self.EMBED_MODE),
-                model_name=self.EMBED_MODEL,
-                api_url=self.EMBED_API_URL,
-                api_key=self.EMBED_API_KEY,
-            ) if self.EMBED_ENABLED else None,
-            vlm=VLMConfig(
-                enabled=self.VLM_ENABLED,
-                mode=EngineMode(self.VLM_MODE),
-                model_name=self.VLM_MODEL,
-                api_url=self.VLM_API_URL,
-                api_key=self.VLM_API_KEY,
-                picture_prompt=PICTURE_DESCRIPTION_PROMPT,
-                code_formula_prompt=CODE_FORMULA_PROMPT,
-            ) if self.VLM_ENABLED else None,
-            reranker=ModelConfig(
-                enabled=self.RERANK_ENABLED,
-                mode=EngineMode(self.RERANK_MODE),
-                model_name=self.RERANK_MODEL,
-                api_url=self.RERANK_API_URL,
-                api_key=self.RERANK_API_KEY,
-            ) if self.RERANK_ENABLED else None,
-        )
 
 
 class SettingsRabbitMQ(BaseSettings):    
@@ -142,7 +77,63 @@ class SettingsDB(BaseSettings):
     @property
     def get_auth_data(self) -> str:
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
-    
+
+
+class SettingsAI(BaseSettings):
+    LLM_MODE: EngineMode = EngineMode.CLOUD
+    VLM_MODE: EngineMode = EngineMode.CLOUD
+    EMBED_MODE: EngineMode = EngineMode.CLOUD
+    RERANK_MODE: EngineMode = EngineMode.CLOUD
+
+    model_config = SettingsConfigDict(env_file=None, extra="ignore")
+
+    def build_ai_config(self) -> AIServiceConfig:
+        config = load_yaml("ai.yaml")
+
+        return AIServiceConfig(
+            llm=self._build_provider_config(config["llm"], self.LLM_MODE),
+            embedder=self._build_provider_config(config["embedding"], self.EMBED_MODE),
+            vlm=self._build_provider_config(
+                config["vlm"],
+                self.VLM_MODE,
+                VLMConfig,
+                picture_prompt=PICTURE_DESCRIPTION_PROMPT,
+                code_formula_prompt=CODE_FORMULA_PROMPT,
+            ),
+            reranker=self._build_provider_config(config["reranker"], self.RERANK_MODE),
+        )
+
+    def _build_model_config(self, config: dict, mode: EngineMode, config_class: type[ModelConfig] = ModelConfig, **extra: Any) -> ModelConfig | None:
+        if not config["enabled"]:
+            return None
+        
+        provider = config[mode.value]
+        api_key = os.getenv(provider["api_key_env"]) if provider.get("api_key_env") else None
+
+        return config_class(
+            mode=mode,
+            model_name=provider["model"],
+            api_url=provider["api_url"],
+            api_key=api_key,
+            **extra
+        )
+
+    def _build_provider_config(self, config: dict, mode: EngineMode, config_class: type[ModelConfig] = ModelConfig, **extra: Any) -> AIProviderConfig | None:
+        if not config["enabled"]:
+            return None
+
+        primary = self._build_model_config(config, mode, config_class, **extra)
+
+        fallback_mode = config.get("fallback_mode")
+        fallback = None
+
+        if fallback_mode:
+            fallback_mode = EngineMode(fallback_mode)
+            if fallback_mode != mode:
+                fallback = self._build_model_config(config, fallback_mode, config_class, **extra)
+
+        return AIProviderConfig(primary=primary, fallback=fallback)
+
 
 settingsAI = SettingsAI()
 settingsQdrant = SettingsQdrant()

@@ -29,16 +29,23 @@ class AIProviderRateLimitError(AIProviderError):
         super().__init__(message=f"Превышен лимит запросов к AI-сервису: {details}", status_code=429)
 
 
-class AIProviderTimeoutError(AIProviderError):
-    """Таймаут ожидания ответа от сервера"""
-    def __init__(self, details: str = ""):
-        super().__init__(message=f"Таймаут ответа от AI-сервиса: {details}", status_code=504)
-
-
 class AIProviderResponseParseError(AIProviderError):
     """Ошибка разбора ответа (например, изменилась структура JSON)"""
     def __init__(self, details: str = ""):
         super().__init__(message=f"Некорректный формат ответа AI-провайдера: {details}", status_code=502)
+
+
+class AIProviderUnavailableError(AIProviderError):
+    """Провайдер временно недоступен."""
+
+    def __init__(self, details: str):
+        super().__init__(message=f"AI-провайдер временно недоступен: {details}", status_code=502)
+
+
+class AIProviderTimeoutError(AIProviderUnavailableError):
+    """Таймаут ожидания ответа от сервера"""
+    def __init__(self, details: str = ""):
+        super().__init__(message=f"Таймаут ответа от AI-сервиса: {details}", status_code=504)
 
 
 class EmbedderError(AIProviderError):

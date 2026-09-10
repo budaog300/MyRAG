@@ -96,6 +96,10 @@ class RAGService:
             logger.info("RAG завершён без LLM: документов=%d", len(final_docs))
             return None, final_docs
 
+        if not self.ai_service.llm:
+            logger.info("LLM отключен: возвращаем найденные документы (%d) без генерации", len(final_docs))
+            return None, final_docs
+
         context_text = "\n\n---\n\n".join([doc.content for doc in final_docs])
         
         prompt = RAG_USER_PROMPT.format(

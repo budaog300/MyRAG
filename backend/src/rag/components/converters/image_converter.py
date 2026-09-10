@@ -7,6 +7,7 @@ import httpx
 
 from src.rag.components.converters.base import BaseDocumentConverter
 from src.services import AIService
+from src.core.exceptions import BaseAppException
 from src.core.exceptions.provider_exceptions import (
     AIProviderResponseParseError,    
     VLMError
@@ -32,92 +33,31 @@ class VLMImageConverter(BaseDocumentConverter):
     def __init__(self, ai_service: AIService):
         self.ai_service = ai_service
 
-    def _encode_image(self, file_path: Path) -> str:
-        """Кодирует локальный файл картинки в base64."""
-        with open(file_path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode("utf-8")
-
     async def _convert(self, file_bytes: bytes, filename: str) -> str:
         if not self.supports(filename):
             raise UnsupportedFileFormatError(extension=Path(filename).suffix)
 
         if self.ai_service.vlm is None:
-            logger.warning(f"VLM отключен (enabled=False). Пропуск обработки изображения: {filename}")
+            logger.warning("VLM отключен (enabled=False). Пропуск обработки изображения: %s", filename)
             return f"<!-- Обработка изображения {filename} пропущена (VLM отключен) -->"
 
         vlm_config = self.ai_service.config.vlm
+        if vlm_config is None or vlm_config.primary is None:
+            raise VLMError(message="Конфигурация VLM не настроена")
 
         try:
-            base64_image = base64.b64encode(file_bytes).decode("utf-8")
-        except Exception as exc:
-            logger.error(f"Ошибка при чтении/кодировании изображения '{filename}': {exc}")
-            raise DocumentConversionError(
-                message=f"Не удалось прочитать файл изображения '{filename}': {exc}"
-            ) from exc
+            ext = Path(filename).suffix.lower().replace(".", "")
+            mime_type = "image/jpeg" if ext in ("jpg", "jpeg") else f"image/{ext}"
 
-        ext = Path(filename).suffix.lower().replace(".", "")
-        mime_type = "image/jpeg" if ext in ["jpg", "jpeg"] else f"image/{ext}"
-
-        payload = {
-            "model": vlm_config.model_name,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": vlm_config.picture_prompt},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:{mime_type};base64,{base64_image}"
-                            },
-                        },
-                    ],
-                }
-            ],
-            "max_tokens": vlm_config.max_tokens,
-            **vlm_config.extra_params,
-        }
-
-        headers = {"Content-Type": "application/json"}
-        if vlm_config.api_key:
-            headers["Authorization"] = f"Bearer {vlm_config.api_key}"
-
-        try:
-            async with httpx.AsyncClient(timeout=vlm_config.timeout) as client:
-                response = await client.post(
-                    vlm_config.api_url,
-                    json=payload,
-                    headers=headers,
-                )
-                response.raise_for_status()
-                data = response.json()
-
-        except httpx.TimeoutException as exc:
-            logger.error("Таймаут VLM API (%s): %s", vlm_config.timeout, exc)
-            raise VLMError(
-                message=f"Превышено время ожидания ответа от VLM API ({vlm_config.timeout}s)"
-            ) from exc
-
-        except httpx.HTTPStatusError as exc:
-            logger.error(
-                "VLM API returned HTTP %s: %s",
-                exc.response.status_code,
-                exc.response.text,
+            extracted_text = await self.ai_service.vlm.analyze_image(
+                image_bytes=file_bytes,
+                prompt=vlm_config.primary.picture_prompt,
+                mime_type=mime_type,
             )
-            raise VLMError(
-                message=f"VLM провайдер вернул ошибку {exc.response.status_code}: {exc.response.text}"
-            ) from exc
-
-        except httpx.RequestError as exc:
-            logger.error(f"Сетевая ошибка при обращении к VLM API: {exc}")
-            raise VLMError(
-                message=f"Сетевая ошибка при связи с VLM провайдером: {exc}"
-            ) from exc
-
-        try:
-            extracted_text = data["choices"][0]["message"]["content"].strip()
-        except (KeyError, IndexError, TypeError) as exc:
-            logger.error(f"Некорректная структура JSON от VLM: {exc} | Data: {data}", exc, data)
-            raise AIProviderResponseParseError() from exc
+        except BaseAppException:
+            raise
+        except Exception as exc:
+            logger.exception("Ошибка обработки изображения '%s' через VLM", filename)
+            raise DocumentConversionError(message=f"Ошибка обработки изображения '{filename}': {exc}") from exc
 
         return f"## Содержимое изображения: {filename}\n\n{extracted_text}"

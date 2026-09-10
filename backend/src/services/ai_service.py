@@ -1,15 +1,15 @@
 import logging
-from typing import Optional
-from src.core.ai_config import ModelConfig, VLMConfig, AIServiceConfig, EngineMode
+from typing import Optional, TypeVar
+from collections.abc import Callable
+from src.core.ai_config import ModelConfig, VLMConfig, AIServiceConfig, AIProviderConfig
 from src.rag.ai.providers import *
 from src.core.exceptions.ai_service_exceptions import (    
-    AIServiceInitializationError,
-    UnsupportedEngineModeError,
+    AIServiceInitializationError
 )
-from src.core.exceptions.provider_exceptions import AIProviderNotConfiguredError
 from src.core.config import settingsAI
 
 logger = logging.getLogger(__name__)
+T = TypeVar("T")
 
 
 class AIService:
@@ -18,25 +18,26 @@ class AIService:
     def __init__(self, config: AIServiceConfig | None = None):
         self.config = config or settingsAI.build_ai_config()
 
-        self.llm: Optional[BaseLLMProvider] = (
-            self._init_llm(self.config.llm) if self.config.llm and getattr(self.config.llm, "enabled", True) else None
-        )
+        llm, llm_fallback = self._init_provider_pair(self.config.llm, self._init_llm)
+        embedder, embedder_fallback = self._init_provider_pair(self.config.embedder, self._init_embedder)
+        vlm, vlm_fallback = self._init_provider_pair(self.config.vlm, self._init_vlm)
+        reranker, reranker_fallback = self._init_provider_pair(self.config.reranker, self._init_reranker)
 
-        self.embedder: Optional[BaseEmbedderProvider] = (
-            self._init_embedder(self.config.embedder) if self.config.embedder and getattr(self.config.embedder, "enabled", True) else None
-        )
+        self.llm = FallbackProvider(llm, llm_fallback) if llm else None
+        self.embedder = FallbackProvider(embedder, embedder_fallback) if embedder else None
+        self.vlm = FallbackProvider(vlm, vlm_fallback) if vlm else None
+        self.reranker = FallbackProvider(reranker, reranker_fallback) if reranker else None
 
-        self.vlm: Optional[BaseVLMProvider] = (
-            self._init_vlm(self.config.vlm) if self.config.vlm and getattr(self.config.vlm, "enabled", True) else None
-        )
+    def _init_provider_pair(self, config: AIProviderConfig | None, init_func: Callable[[ModelConfig], T]) -> tuple[Optional[T], Optional[T]]:
+        if not config:
+            return None, None
 
-        self.reranker: Optional[BaseRerankerProvider] = (
-            self._init_reranker(self.config.reranker) if self.config.reranker and getattr(self.config.reranker, "enabled", True) else None
-        )
+        primary = init_func(config.primary) if config.primary else None
+        fallback = init_func(config.fallback) if config.fallback else None
+
+        return primary, fallback
 
     def _init_llm(self, config: ModelConfig) -> BaseLLMProvider:
-        if config.mode not in (EngineMode.API, EngineMode.LOCAL):
-            raise UnsupportedEngineModeError(service_name="LLM", mode=str(config.mode))
         try:
             provider = LLMProvider(config)
             logger.info("LLM провайдер успешно инициализирован в режиме %s", config.mode)
@@ -48,8 +49,6 @@ class AIService:
             raise AIServiceInitializationError(service_name="LLM", details=str(exc)) from exc
 
     def _init_embedder(self, config: ModelConfig) -> BaseEmbedderProvider:
-        if config.mode not in (EngineMode.API, EngineMode.LOCAL):
-            raise UnsupportedEngineModeError(service_name="Embedder", mode=str(config.mode))
         try:
             provider = EmbedderProvider(config)
             logger.info("Embedder провайдер успешно инициализирован в режиме %s", config.mode)
@@ -61,8 +60,6 @@ class AIService:
             raise AIServiceInitializationError(service_name="Embedder", details=str(exc)) from exc
 
     def _init_vlm(self, config: VLMConfig) -> BaseVLMProvider:
-        if config.mode not in (EngineMode.API, EngineMode.LOCAL):
-            raise UnsupportedEngineModeError(service_name="VLM", mode=str(config.mode))
         try:
             provider = VLMProvider(config)
             logger.info("VLM провайдер успешно инициализирован в режиме %s", config.mode)
@@ -74,8 +71,6 @@ class AIService:
             raise AIServiceInitializationError(service_name="VLM", details=str(exc)) from exc
 
     def _init_reranker(self, config: ModelConfig) -> BaseRerankerProvider:
-        if config.mode not in (EngineMode.API, EngineMode.LOCAL):
-            raise UnsupportedEngineModeError(service_name="Reranker", mode=str(config.mode))
         try:
             provider = RerankerProvider(config)
             logger.info("Reranker провайдер успешно инициализирован в режиме %s", config.mode)
@@ -85,23 +80,3 @@ class AIService:
         except Exception as exc:
             logger.error("Ошибка инициализации Reranker провайдера: %s", exc, exc_info=True)
             raise AIServiceInitializationError(service_name="Reranker", details=str(exc)) from exc
-
-    def get_llm(self) -> BaseLLMProvider:
-        if not self.llm:
-            raise AIProviderNotConfiguredError(service_name="LLM")
-        return self.llm
-
-    def get_embedder(self) -> BaseEmbedderProvider:
-        if not self.embedder:
-            raise AIProviderNotConfiguredError(service_name="Embedder")
-        return self.embedder
-
-    def get_vlm(self) -> BaseVLMProvider:
-        if not self.vlm:
-            raise AIProviderNotConfiguredError(service_name="VLM")
-        return self.vlm
-
-    def get_reranker(self) -> BaseRerankerProvider:
-        if not self.reranker:
-            raise AIProviderNotConfiguredError(service_name="Reranker")
-        return self.reranker
