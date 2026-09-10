@@ -84,11 +84,6 @@ class DoclingDocumentConverter(BaseDocumentConverter):
 
         vlm_config = vlm_config.primary
 
-        if vlm_config.mode != EngineMode.CLOUD:
-            raise PipelineInitializationError(
-                reason="Docling VLM enrichment поддерживает только CLOUD mode"
-            )
-
         headers={"Authorization": f"Bearer {vlm_config.api_key}", "Content-Type": "application/json"} if vlm_config.api_key else {}
 
         params = {

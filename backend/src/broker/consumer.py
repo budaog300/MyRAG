@@ -17,7 +17,7 @@ class RabbitMQConsumer(BaseRabbitMQ):
         self,
         obj: Type[T],
         func: Callable[[T], Awaitable[None]],
-        queue_name: str = settingsRabbitMQ.documents_queue,
+        queue_name: str = settingsRabbitMQ.DOCUMENTS_QUEUE,
     ) -> None:
         if not self.channel or self.channel.is_closed:
             raise RuntimeError("Канал RabbitMQ не инициализирован.")

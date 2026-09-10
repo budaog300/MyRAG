@@ -42,9 +42,9 @@ class SettingsRabbitMQ(BaseSettings):
     RABBITMQ_PASSWORD: str = Field(default="guest")
     RABBITMQ_VHOST: str = Field(default="/")
 
-    documents_exchange: str = Field(default="documents_exchange")
-    documents_queue: str = Field(default="documents_queue")
-    documents_routing_key: str = Field(default="documents.ingest")
+    DOCUMENTS_EXCHANGE: str = Field(default="documents_exchange")
+    DOCUMENTS_QUEUE: str = Field(default="documents_queue")
+    DOCUMENTS_ROUTING_KEY: str = Field(default="documents.ingest")
 
     model_config = SettingsConfigDict(env_file=None, extra="ignore")
     

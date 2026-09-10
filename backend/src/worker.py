@@ -38,7 +38,7 @@ async def main():
     consumer = RabbitMQConsumer()
     await consumer.connect()
     await consumer.setup_topology()
-    logger.info("Воркер готов к обработке документов: queue=%s", settingsRabbitMQ.documents_queue)
+    logger.info("Воркер готов к обработке документов: queue=%s", settingsRabbitMQ.DOCUMENTS_QUEUE)
 
     async def handle_message(task: IngestDataSchema):
         async with async_session() as session:
@@ -59,7 +59,7 @@ async def main():
     
     try:
         await consumer.consume(
-            queue_name=settingsRabbitMQ.documents_queue,
+            queue_name=settingsRabbitMQ.DOCUMENTS_QUEUE,
             obj=IngestDataSchema,
             func=handle_message,
         )

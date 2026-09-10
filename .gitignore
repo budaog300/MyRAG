@@ -59,6 +59,8 @@ logs/
 /backups/
 .env.local
 .env.*.local
+!.env.example
+!env/*.example
 *storage/
 docs/
 docs*/

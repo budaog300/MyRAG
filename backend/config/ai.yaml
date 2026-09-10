@@ -1,6 +1,6 @@
 llm:
   enabled: true
-  fallback_mode: local
+  fallback_mode: cloud
 
   cloud:
     model: openai/gpt-4o-mini
@@ -13,7 +13,7 @@ llm:
 
 vlm:
   enabled: true
-  fallback_mode: local
+  fallback_mode: cloud
 
   cloud:
     model: qwen/qwen3.7-plus
@@ -26,7 +26,7 @@ vlm:
 
 embedding:
   enabled: true
-  fallback_mode: local
+  fallback_mode: cloud
 
   cloud:
     model: baai/bge-m3
@@ -39,7 +39,7 @@ embedding:
 
 reranker:
   enabled: true
-  fallback_mode: local
+  fallback_mode: cloud
 
   cloud:
     model: cohere/rerank-v3.5

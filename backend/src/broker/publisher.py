@@ -14,8 +14,8 @@ class RabbitMQPublisher(BaseRabbitMQ):
     async def publish(
         self,
         obj: BaseModel,
-        exchange_name: str = settingsRabbitMQ.documents_exchange,
-        routing_key: str = settingsRabbitMQ.documents_routing_key,
+        exchange_name: str = settingsRabbitMQ.DOCUMENTS_EXCHANGE,
+        routing_key: str = settingsRabbitMQ.DOCUMENTS_ROUTING_KEY,
     ) -> None:
         if not self.channel or self.channel.is_closed:
             raise RuntimeError("Канал RabbitMQ не инициализирован. Вызовите connect() перед публикацией.")

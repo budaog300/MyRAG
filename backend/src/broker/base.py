@@ -40,9 +40,9 @@ class BaseRabbitMQ:
 
     async def setup_topology(
         self,
-        exchange_name: str = settingsRabbitMQ.documents_exchange,
-        queue_name: str = settingsRabbitMQ.documents_queue,
-        routing_key: str = settingsRabbitMQ.documents_routing_key,
+        exchange_name: str = settingsRabbitMQ.DOCUMENTS_EXCHANGE,
+        queue_name: str = settingsRabbitMQ.DOCUMENTS_QUEUE,
+        routing_key: str = settingsRabbitMQ.DOCUMENTS_ROUTING_KEY,
     ) -> None:
         if not self.channel or self.channel.is_closed:
             raise RuntimeError("Канал RabbitMQ не инициализирован. Вызовите connect() перед настройкой топологии.")
@@ -69,7 +69,7 @@ class BaseRabbitMQ:
             if not self.channel or self.channel.is_closed:
                 logger.debug("Проверка RabbitMQ: канал закрыт")
                 return False
-            await self.channel.declare_queue(name=self.queue_name, passive=True)
+            await self.channel.declare_queue(name=settingsRabbitMQ.DOCUMENTS_QUEUE, passive=True)
             logger.debug("Проверка RabbitMQ успешно выполнена")
             return True
         except Exception as exc:
