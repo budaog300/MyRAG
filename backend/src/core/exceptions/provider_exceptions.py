@@ -36,14 +36,11 @@ class AIProviderResponseParseError(AIProviderError):
 
 
 class AIProviderUnavailableError(AIProviderError):
-    """Провайдер временно недоступен."""
-
-    def __init__(self, details: str):
-        super().__init__(message=f"AI-провайдер временно недоступен: {details}", status_code=502)
+    def __init__(self, details: str = "", message: str | None = None, status_code: int = 503):
+        super().__init__(message=message or f"AI-сервис недоступен: {details}", status_code=status_code)
 
 
 class AIProviderTimeoutError(AIProviderUnavailableError):
-    """Таймаут ожидания ответа от сервера"""
     def __init__(self, details: str = ""):
         super().__init__(message=f"Таймаут ответа от AI-сервиса: {details}", status_code=504)
 

@@ -41,7 +41,6 @@ class SettingsRabbitMQ(BaseSettings):
     RABBITMQ_USER: str = Field(default="guest")
     RABBITMQ_PASSWORD: str = Field(default="guest")
     RABBITMQ_VHOST: str = Field(default="/")
-
     DOCUMENTS_EXCHANGE: str = Field(default="documents_exchange")
     DOCUMENTS_QUEUE: str = Field(default="documents_queue")
     DOCUMENTS_ROUTING_KEY: str = Field(default="documents.ingest")

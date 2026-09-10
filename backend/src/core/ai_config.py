@@ -3,8 +3,6 @@ from enum import Enum
 from pydantic import BaseModel, Field, ConfigDict, computed_field
 
 
-
-
 class EngineMode(str, Enum):
     LOCAL = "local"
     CLOUD = "cloud"
@@ -16,7 +14,7 @@ class ModelConfig(BaseModel):
     model_name: str
     api_url: str
     api_key: Optional[str] = None
-    timeout: float = 60.0
+    timeout: float = 120.0
     max_tokens: Optional[int] = None
     prompt: Optional[str] = None
 
