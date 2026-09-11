@@ -37,7 +37,7 @@ class S3Service:
         async with self._get_client() as s3:
             try:
                 await s3.head_bucket(Bucket=self.bucket_name)
-                logger.info("S3 бакет создан: bucket=%s", self.bucket_name)
+                logger.info("S3 бакет найден: bucket=%s", self.bucket_name)
             except ClientError as exc:
                 logger.info("S3 бакет не найден, создание: bucket=%s", self.bucket_name)
                 try:

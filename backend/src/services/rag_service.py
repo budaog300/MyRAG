@@ -121,7 +121,7 @@ class RAGService:
         except Exception as exc:
             logger.error("Ошибка генерации ответа LLM: ошибка=%s", exc, exc_info=True)
             raise RAGException(message=f"Ошибка при генерации ответа LLM: {exc}") from exc
-
+        
         return answer, final_docs
 
     async def run(

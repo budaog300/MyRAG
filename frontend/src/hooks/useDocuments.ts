@@ -23,6 +23,7 @@ export const useDocuments = ({ collectionId, page = 1, size = 10 }: UseDocuments
     mutationFn: ({ documentId }) => deleteDocument(collectionId, documentId),
     onSuccess: () => {
       client.invalidateQueries({ queryKey: ["documents", collectionId] });
+      client.invalidateQueries({ queryKey: ["collections", collectionId] });
     },
   });
 

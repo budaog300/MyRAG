@@ -10,7 +10,6 @@ llm:
   local:
     model: qwen2.5:3b
     api_url: http://ollama:11434/v1/chat/completions
-    keep_alive: -1
 
 vlm:
   enabled: true
@@ -24,7 +23,6 @@ vlm:
   local:
     model: qwen2.5vl:3b
     api_url: http://ollama:11434/v1/chat/completions
-    keep_alive: -1
 
 embedding:
   enabled: true

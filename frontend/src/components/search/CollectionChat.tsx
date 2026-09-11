@@ -47,68 +47,8 @@ const CollectionChat = () => {
         </summary>
 
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <label className="flex min-h-[72px] flex-col justify-between text-[11px] text-muted-foreground">
-            <span className="flex min-h-8 items-start gap-1">
-              <span>Количество найденных фрагментов</span>
-              <InfoTooltip text="Сколько фрагментов будет найдено на этапе поиска перед дальнейшей обработкой." />
-            </span>
-
-            <input
-              type="number"
-              min={1}
-              value={settings.retrieve_limit}
-              onChange={(event) =>
-                setSettings((prev) => ({
-                  ...prev,
-                  retrieve_limit: Number(event.target.value),
-                }))
-              }
-              className="w-full rounded-xl border border-border bg-muted/20 px-3 py-2 text-sm text-foreground"
-            />
-          </label>
-
-          <label className="flex min-h-[72px] flex-col justify-between text-[11px] text-muted-foreground">
-            <span className="flex min-h-8 items-start gap-1">
-              <span>Количество после объединения</span>
-              <InfoTooltip text="Сколько результатов учитывать после объединения результатов разных способов поиска." />
-            </span>
-
-            <input
-              type="number"
-              min={1}
-              value={settings.merge_limit}
-              onChange={(event) =>
-                setSettings((prev) => ({
-                  ...prev,
-                  merge_limit: Number(event.target.value),
-                }))
-              }
-              className="w-full rounded-xl border border-border bg-muted/20 px-3 py-2 text-sm text-foreground"
-            />
-          </label>
-
-          <label className="flex min-h-[72px] flex-col justify-between text-[11px] text-muted-foreground">
-            <span className="flex min-h-8 items-start gap-1">
-              <span>Количество финальных источников</span>
-              <InfoTooltip text="Сколько наиболее релевантных фрагментов попадёт в итоговый контекст для ответа." />
-            </span>
-
-            <input
-              type="number"
-              min={1}
-              value={settings.top_k}
-              onChange={(event) =>
-                setSettings((prev) => ({
-                  ...prev,
-                  top_k: Number(event.target.value),
-                }))
-              }
-              className="w-full rounded-xl border border-border bg-muted/20 px-3 py-2 text-sm text-foreground"
-            />
-          </label>
-
-          <label className="flex min-h-[72px] flex-col text-[11px] text-muted-foreground">
-            <span className="flex min-h-8 items-start gap-1">
+          <label className="flex min-h-[72px] flex-col text-[15px] text-muted-foreground">
+            <span className="flex min-h-8 items-center gap-1">
               <span>Креативность ответа</span>
               <InfoTooltip text="Определяет случайность ответа модели. Низкие значения дают более точные и предсказуемые ответы." />
             </span>
@@ -135,8 +75,8 @@ const CollectionChat = () => {
             </div>
           </label>
 
-          <label className="flex min-h-[72px] flex-col justify-between text-[11px] text-muted-foreground">
-            <span className="flex min-h-8 items-start gap-1">
+          <label className="flex min-h-[72px] flex-col justify-between text-[15px] text-muted-foreground">
+            <span className="flex min-h-8 items-center gap-1">
               <span>Максимальная длина ответа</span>
               <InfoTooltip text="Максимальное количество токенов, которое модель может использовать для формирования ответа." />
             </span>
@@ -155,7 +95,7 @@ const CollectionChat = () => {
             />
           </label>
 
-          <label className="flex min-h-[72px] items-center gap-2 rounded-xl border border-border bg-muted/10 px-3 text-xs text-muted-foreground">
+          <label className="flex min-h-[72px] items-center gap-2 rounded-xl border border-border bg-muted/10 px-3 text-[15px] text-muted-foreground">
             <input
               type="checkbox"
               checked={settings.only_context}
@@ -239,35 +179,37 @@ const CollectionChat = () => {
           !search.isPending &&
           !search.isError &&
           search.isSuccess)) && (
-          <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
-            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
-              Источники
-            </p>
+          <details className="rounded-2xl border border-border bg-card p-4">
+            <summary className="cursor-pointer text-xs uppercase tracking-[0.3em] text-muted-foreground">
+              Источники {documents.length > 0 && `(${documents.length})`}
+            </summary>
 
-            {documents.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Источники не найдены.
-              </p>
-            ) : (
-              documents.map((doc) => (
-                <article
-                  key={doc.id ?? doc.source}
-                  className="rounded-2xl border border-border bg-muted/20 p-3 text-sm"
-                >
-                  <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                    <span>{doc.source || "Источник"}</span>
-                    <span>
-                      Score: {doc.score?.toFixed(4) ?? "~"}
-                    </span>
-                  </div>
+            <div className="mt-3 space-y-3">
+              {documents.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Источники не найдены.
+                </p>
+              ) : (
+                documents.map((doc) => (
+                  <article
+                    key={doc.id ?? doc.source}
+                    className="rounded-2xl border border-border bg-muted/20 p-3 text-sm"
+                  >
+                    <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                      <span>{doc.source || "Источник"}</span>
+                      <span>
+                        Score: {doc.score?.toFixed(4) ?? "~"}
+                      </span>
+                    </div>
 
-                  <div className="prose prose-invert prose-xs mt-2 max-w-none text-muted-foreground">
-                    {doc.content}
-                  </div>
-                </article>
-              ))
-            )}
-          </div>
+                    <div className="prose prose-invert prose-xs mt-2 max-w-none text-muted-foreground">
+                      {doc.content}
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+          </details>
         )}
     </div>
   );

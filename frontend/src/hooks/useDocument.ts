@@ -19,6 +19,8 @@ export const useDocument = (collectionId?: string, documentId?: string) => {
         queryKey: ["documents", collectionId],
         refetchType: "all",
       });
+      client.invalidateQueries({ queryKey: ["document", collectionId, documentId] });
+      client.invalidateQueries({ queryKey: ["collections", collectionId] });
     },
   });
 

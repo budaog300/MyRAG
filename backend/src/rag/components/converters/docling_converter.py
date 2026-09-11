@@ -42,8 +42,7 @@ class DoclingDocumentConverter(BaseDocumentConverter):
     def __init__(
         self,
         ai_service: AIService
-    ):        
-        print("\n=== [DEBUG INIT START] ===")
+    ):
         self.ai_service = ai_service
         
         try:
@@ -101,7 +100,7 @@ class DoclingDocumentConverter(BaseDocumentConverter):
 
         pipeline_options.generate_picture_images = True
         pipeline_options.do_picture_description = True
-
+        logger.info("Docling VLM: model=%s, url=%s, enabled=%s", vlm_config.model_name, vlm_config.api_url, pipeline_options.do_picture_description)
         pipeline_options.picture_description_options = (
             PictureDescriptionApiOptions(
                 url=vlm_config.api_url,

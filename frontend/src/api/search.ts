@@ -5,6 +5,8 @@ export const searchCollection = async (
   collectionId: string,
   payload: SearchRequest,
 ): Promise<SearchResponse> => {
-  const { data } = await client.post<SearchResponse>(`/collections/${collectionId}/search`, payload);
+  const { data } = await client.post<SearchResponse>(`/collections/${collectionId}/search`, payload, {
+    timeout: 120000,
+  });
   return data;
 };

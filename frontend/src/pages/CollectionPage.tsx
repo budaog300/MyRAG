@@ -116,12 +116,12 @@ const CollectionPage = () => {
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-[0.4em] text-accent">Коллекция</p>
           <div className="mt-1 flex items-center gap-2">
-            <h2 className="mt-1 text-3xl font-semibold text-foreground">{collection.name}</h2>
+            <h2 className="text-3xl font-semibold text-foreground">{collection.name}</h2>
             <Popover>
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-border text-xs text-muted-foreground hover:text-foreground"
+                  className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border text-xs text-muted-foreground hover:text-foreground"
                 >
                   ?
                 </button>
@@ -173,8 +173,6 @@ const CollectionPage = () => {
               </span>
               <InfoTooltip text="Хранилище векторных представлений документов. Используется для поиска фрагментов по смысловой близости." />
             </h3>
-            <p className="text-sm text-muted-foreground">Размер вектора: {collection.vector_repo_info.size}</p>
-            <p className="text-sm text-muted-foreground">Метрика расстояния: {collection.vector_repo_info.distance}</p>
             <p className="text-sm text-muted-foreground">Количество фрагментов: {collection.vector_repo_info.points_count}</p>
           </article>
           <article className="space-y-1 rounded-2xl border border-border bg-muted/10 p-3">

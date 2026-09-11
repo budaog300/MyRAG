@@ -5,13 +5,16 @@ services:
     env_file:
       - ./env/.env
       - ./env/.env.secrets
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
     restart: unless-stopped
 
   rabbitmq:
@@ -19,54 +22,63 @@ services:
     env_file:
       - ./env/.env
       - ./env/.env.secrets
+    ports:
+      - "5672:5672"
+      - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
     restart: unless-stopped
 
   minio:
     image: minio/minio:latest
+    command: server /data --console-address ":9001"
     env_file:
       - ./env/.env
       - ./env/.env.secrets
-    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
     volumes:
       - minio_data:/data
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
     restart: unless-stopped
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:9.1.2
-    env_file:
-      - ./env/.env
-      - ./env/.env.secrets
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     healthcheck:
-      test: [ "CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health || exit 1" ]
-      interval: 10s
+      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1" ]
+      interval: 30s
       timeout: 10s
-      retries: 10
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 
   qdrant:
     image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
     volumes:
       - qdrant_data:/qdrant/storage
-    env_file:
-      - ./env/.env
-      - ./env/.env.secrets
     restart: unless-stopped
 
   migrations:
@@ -86,13 +98,14 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: [ "python", "-m", "src.main" ]
+    command: [ "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload" ]
     env_file:
       - ./env/.env
       - ./env/.env.secrets
     ports:
       - "8000:8000"
     volumes:
+      - ./backend:/app
       - ./logs:/app/logs
     depends_on:
       migrations:
@@ -111,11 +124,12 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: [ "python", "-m", "src.worker" ]
+    command: [ "watchfiles", "python -m src.worker", "/app/src" ]
     env_file:
       - ./env/.env
       - ./env/.env.secrets
     volumes:
+      - ./backend:/app
       - ./logs:/app/logs
     depends_on:
       migrations:
@@ -129,18 +143,19 @@ services:
       qdrant:
         condition: service_started
     restart: unless-stopped
-    deploy:
-      replicas: 1
 
   rag_frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     env_file:
       - ./env/.env
       - ./env/.env.secrets
     ports:
-      - "8080:80"
+      - "8080:5173"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
     depends_on:
       - rag_backend
     restart: unless-stopped
@@ -207,6 +222,7 @@ volumes:
   minio_data:
   elasticsearch_data:
   qdrant_data:
+  frontend_node_modules:
   ollama_data:
   infinity_embeddings_data:
   infinity_reranker_data:
