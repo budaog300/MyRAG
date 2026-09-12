@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
+
 from src.services import RAGService, AIService, CollectionService, S3Service
 from src.rag.repositories import QdrantRepository, ElasticRepository
 from src.rag.repositories.context_enricher import ContextEnricher
@@ -18,6 +19,7 @@ from src.core.request_context import request_id_ctx
 
 setup_logger()
 logger = logging.getLogger(__name__)
+
 
 
 @asynccontextmanager

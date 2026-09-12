@@ -41,8 +41,10 @@ class DocumentService:
         self,
         collection_name: str,
         documents: List[RawDocumentSchema],
+        parent_chunk_size: int = 3000,
+        parent_chunk_overlap: int = 500,
         chunk_size: int = 1000,
-        chunk_overlap: int = 100,
+        chunk_overlap: int = 100       
     ) -> None:
         if not collection_name or not collection_name.strip():
             raise InvalidCollectionNameError(collection_name=collection_name)
@@ -60,10 +62,12 @@ class DocumentService:
 
                 markdown_text = await self.converter_service.convert_to_markdown(doc.file_bytes, doc.source)
                 chunks = self.splitter.split(
-                    doc=doc,
-                    markdown_text=markdown_text,
+                    doc,
+                    markdown_text,
                     chunk_size=chunk_size,
                     chunk_overlap=chunk_overlap,
+                    parent_chunk_size=parent_chunk_size,
+                    parent_chunk_overlap=parent_chunk_overlap,
                 )
 
                 children_count = 0

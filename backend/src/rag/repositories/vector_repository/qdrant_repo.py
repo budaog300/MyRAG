@@ -214,15 +214,15 @@ class QdrantRepository(BaseVectorRepository):
                 collection_name=collection_name,
                 points=points,
             )
-            logger.info("Документы успешно сохранены в Qdrant: коллекция=%s, документов=%d", collection_name, len(points))
+            logger.info("Документы успешно сохранены в Qdrant: коллекция=%s, чанков=%d", collection_name, len(points))
         except UnexpectedResponse as e:
             if e.status_code == 404:
                 logger.error("Коллекция Qdrant не найдена при сохранении: коллекция=%s", collection_name)
                 raise CollectionNotFoundError(collection_name)
-            logger.error("Ошибка сохранения документов в Qdrant: коллекция=%s, документов=%d, ошибка=%s", collection_name, len(points), e)
+            logger.error("Ошибка сохранения чанков в Qdrant: коллекция=%s, чанков=%d, ошибка=%s", collection_name, len(points), e)
             raise VectorDatabaseError(str(e))
         except Exception as e:
-            logger.error("Ошибка сохранения документов в Qdrant: коллекция=%s, ошибка=%s", collection_name, e)
+            logger.error("Ошибка сохранения чанков в Qdrant: коллекция=%s, ошибка=%s", collection_name, e)
             raise VectorDatabaseError(str(e))
 
     async def search_points(

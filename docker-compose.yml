@@ -117,6 +117,14 @@ services:
       - ./env/.env.secrets
     volumes:
       - ./logs:/app/logs
+    deploy:
+      replicas: 1
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
     depends_on:
       migrations:
         condition: service_completed_successfully
@@ -129,8 +137,6 @@ services:
       qdrant:
         condition: service_started
     restart: unless-stopped
-    deploy:
-      replicas: 1
 
   rag_frontend:
     build:

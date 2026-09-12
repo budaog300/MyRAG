@@ -131,6 +131,14 @@ services:
     volumes:
       - ./backend:/app
       - ./logs:/app/logs
+      - hf_cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
     depends_on:
       migrations:
         condition: service_completed_successfully
@@ -226,3 +234,4 @@ volumes:
   ollama_data:
   infinity_embeddings_data:
   infinity_reranker_data:
+  hf_cache:

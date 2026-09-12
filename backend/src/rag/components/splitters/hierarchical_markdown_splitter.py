@@ -19,27 +19,14 @@ logger = logging.getLogger(__name__)
 class HierarchicalMarkdownSplitter(BaseDocumentSplitter):
     def __init__(
         self,
-        parent_chunk_size: int = 3000,
-        parent_chunk_overlap: int = 100,
-        chunk_size: int = 500,
-        chunk_overlap: int = 50,
         headers_to_split_on: list[tuple[str, str]] | None = None,
         delimiter: str = DOCUMENT_DELIMITER,
-    ):
-        self._validate_config(
-            chunk_size, chunk_overlap, parent_chunk_size, parent_chunk_overlap
-        )
-        
+    ):        
         self.headers_to_split_on = headers_to_split_on or [
             ("#", "Header_1"),
             ("##", "Header_2"),
-            ("###", "Header_3"),
-            ("####", "Header_4"),
+            ("###", "Header_3")
         ]
-        self.parent_chunk_size = parent_chunk_size
-        self.parent_chunk_overlap = parent_chunk_overlap
-        self.chunk_size = chunk_size
-        self.chunk_overlap = chunk_overlap
         self.delimiter = delimiter
 
     @staticmethod
@@ -75,32 +62,26 @@ class HierarchicalMarkdownSplitter(BaseDocumentSplitter):
         self, 
         doc: RawDocumentSchema, 
         markdown_text: str,
-        chunk_size: int | None = None, 
-        chunk_overlap: int | None = None,
-        parent_chunk_size: int | None = None,
-        parent_chunk_overlap: int | None = None,
-        **kwargs
+        parent_chunk_size: int = 3000,
+        parent_chunk_overlap: int = 500,
+        chunk_size: int = 1000,
+        chunk_overlap: int = 100
     ) -> List[RAGDocument]:
-        actual_chunk_size = chunk_size if chunk_size is not None else self.chunk_size            
-        actual_chunk_overlap = chunk_overlap if chunk_overlap is not None else self.chunk_overlap            
-        actual_parent_chunk_size = parent_chunk_size if parent_chunk_size is not None else self.parent_chunk_size          
-        actual_parent_chunk_overlap = parent_chunk_overlap if parent_chunk_overlap is not None else self.parent_chunk_overlap            
-
         self._validate_config(
-            actual_chunk_size, 
-            actual_chunk_overlap, 
-            actual_parent_chunk_size, 
-            actual_parent_chunk_overlap
+            chunk_size, 
+            chunk_overlap, 
+            parent_chunk_size, 
+            parent_chunk_overlap
         )
 
         logger.info(
             "Начало разбиения документа: document_id=%s, размер текста=%d, parent_chunk_size=%d, parent_overlap=%d, chunk_size=%d, chunk_overlap=%d",
             doc.document_id,
-            len(markdown_text),
-            actual_parent_chunk_size,
-            actual_parent_chunk_overlap,
-            actual_chunk_size,
-            actual_chunk_overlap,
+            len(markdown_text),           
+            parent_chunk_size, 
+            parent_chunk_overlap,
+            chunk_size, 
+            chunk_overlap, 
         )
 
         if not markdown_text or not markdown_text.strip():
@@ -114,14 +95,14 @@ class HierarchicalMarkdownSplitter(BaseDocumentSplitter):
             )
 
             parent_text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=actual_parent_chunk_size,
-                chunk_overlap=actual_parent_chunk_overlap,
+                chunk_size=parent_chunk_size,
+                chunk_overlap=parent_chunk_overlap,
                 separators=["\n\n\n", "\n\n", "\n", " ", ""],
             )
 
             child_text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=actual_chunk_size,
-                chunk_overlap=actual_chunk_overlap,
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
                 separators=["\n\n", "\n", " ", ""],
             )
         except Exception as exc:
@@ -176,7 +157,7 @@ class HierarchicalMarkdownSplitter(BaseDocumentSplitter):
                         for child_index, child_raw_text in enumerate(raw_children):
                             child_chunk_id = str(uuid.uuid5(
                                 uuid.NAMESPACE_DNS, 
-                                f"{doc.document_id}:{section_idx}:{child_index}:{child_raw_text}"
+                                f"{parent_chunk_id}:{child_index}:{child_raw_text}"
                             ))
                             chunk_hash = hashlib.sha256(child_raw_text.encode("utf-8")).hexdigest()
 

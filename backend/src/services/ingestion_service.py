@@ -84,7 +84,7 @@ class DocumentIngestionService:
                     chunk_size=config.chunk_size,
                     chunk_overlap=config.chunk_overlap,
                     parent_chunk_size=config.parent_chunk_size,
-                    parent_chunk_overlap=config.parent_chunk_overlap,
+                    parent_chunk_overlap=config.parent_chunk_overlap
                 )
 
                 await self.broker.publish(task_data)

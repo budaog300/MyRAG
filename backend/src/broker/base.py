@@ -1,7 +1,9 @@
 import logging
 import aio_pika
+from aiormq.exceptions import AMQPConnectionError
 
 from src.core.config import settingsRabbitMQ
+from src.core.decorators import retry
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +16,13 @@ class BaseRabbitMQ:
         self.connection: aio_pika.RobustConnection | None = None
         self.channel: aio_pika.RobustChannel | None = None
 
+    @retry(
+        attempts=10,
+        delay=2,
+        backoff=1.5,
+        max_delay=10,
+        retry_exceptions=(AMQPConnectionError, ConnectionError),
+    )
     async def connect(self, prefetch_count: int = 10) -> None:
         try:
             logger.info("Подключение к RabbitMQ: prefetch_count=%d", prefetch_count)

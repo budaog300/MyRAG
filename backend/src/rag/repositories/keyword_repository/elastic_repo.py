@@ -70,7 +70,7 @@ class ElasticRepository(BaseKeywordRepository):
     async def get_index_details(self, index: str) -> KeywordIndexSchema | None:
         try:
             info = await self.client.count(index=index)
-            logger.info("Информация об индексе получена: индекс=%s, документов=%d", index, info["count"])
+            logger.info("Информация об индексе получена: индекс=%s, чанков=%d", index, info["count"])
             return KeywordIndexSchema(
                 name=index,
                 points_count=info["count"]
@@ -124,7 +124,7 @@ class ElasticRepository(BaseKeywordRepository):
             logger.warning("Индекс Elasticsearch не найден при удалении по фильтру: индекс=%s", index_name)
             return None
         except Exception as e:
-            logger.error("Ошибка удаления документов по фильтру: индекс=%s, ошибка=%s", index_name, e)
+            logger.error("Ошибка удаления чанков по фильтру: индекс=%s, ошибка=%s", index_name, e)
             raise KeywordDatabaseError(str(e))
 
     async def index_documents(self, index: str, items: List[Dict[str, Any]]):
@@ -143,12 +143,12 @@ class ElasticRepository(BaseKeywordRepository):
         try:
             await helpers.async_bulk(self.client, actions)
             await self.client.indices.refresh(index=index)
-            logger.info("Индексация документов в Elasticsearch завершена: индекс=%s, документов=%d", index, len(items))
+            logger.info("Индексация чанков в Elasticsearch завершена: индекс=%s, чанков=%d", index, len(items))
         except NotFoundError:
             logger.error("Индекс Elasticsearch не найден при индексации: индекс=%s", index)
             raise CollectionNotFoundError(index)
         except Exception as e:
-            logger.error("Ошибка массовой индексации Elasticsearch: индекс=%s, документов=%d, ошибка=%s", index, len(items), e)
+            logger.error("Ошибка массовой индексации Elasticsearch: индекс=%s, чанков=%d, ошибка=%s", index, len(items), e)
             raise KeywordDatabaseError(f"Ошибка массовой индексации: {e}")
 
     async def search(
@@ -202,10 +202,10 @@ class ElasticRepository(BaseKeywordRepository):
             logger.info("Документы Elasticsearch получены по ID: индекс=%s, запрошено=%d, найдено=%d", index, len(ids), len(result))
             return result
         except NotFoundError:
-            logger.error("Индекс Elasticsearch не найден при получении документов: индекс=%s", index)
+            logger.error("Индекс Elasticsearch не найден при получении чанков: индекс=%s", index)
             raise CollectionNotFoundError(index)
         except Exception as e:
-            logger.error("Ошибка получения документов Elasticsearch по ID: индекс=%s, ошибка=%s", index, e)
+            logger.error("Ошибка получения чанков Elasticsearch по ID: индекс=%s, ошибка=%s", index, e)
             raise KeywordDatabaseError(str(e))
 
     async def ping(self) -> bool:

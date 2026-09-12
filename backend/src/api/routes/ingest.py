@@ -15,10 +15,10 @@ async def ingest_documents_async(
     ingestion_service: IngestionServiceDep,
     files: list[UploadFile] = File(...),
     collection_id: Annotated[str, Form(description="Название коллекции")] = ...,
-    parent_chunk_size: Annotated[int | None, Form(description="Размер родительского чанка")] = None,
-    parent_chunk_overlap: Annotated[int | None, Form(description="Перекрытие родительских чанков")] = None,
-    chunk_size: Annotated[int | None, Form(description="Размер дочернего чанка")] = None,
-    chunk_overlap: Annotated[int | None, Form(description="Перекрытие дочерних чанков")] = None
+    parent_chunk_size: Annotated[int, Form(description="Размер родительского чанка")] = 3000,
+    parent_chunk_overlap: Annotated[int, Form(description="Перекрытие родительских чанков")] = 500,
+    chunk_size: Annotated[int, Form(description="Размер дочернего чанка")] = 1000,
+    chunk_overlap: Annotated[int, Form(description="Перекрытие дочерних чанков")] = 100
 ):
     config = IngestionConfigParams(
         collection_id=collection_id,

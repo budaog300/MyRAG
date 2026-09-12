@@ -1,10 +1,11 @@
 import asyncio
+import time
 import logging
 from pathlib import Path
 from typing import Set, Optional
 from io import BytesIO
 from docling.document_converter import DocumentConverter, PdfFormatOption, ImageFormatOption
-from docling.datamodel.pipeline_options import PdfPipelineOptions, PictureDescriptionApiOptions, CodeFormulaVlmOptions
+from docling.datamodel.pipeline_options import PdfPipelineOptions, PictureDescriptionVlmEngineOptions, CodeFormulaVlmOptions
 from docling.datamodel.stage_model_specs import (
     VlmModelSpec,
     ApiModelConfig,
@@ -13,20 +14,26 @@ from docling.datamodel.stage_model_specs import (
 )
 from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.datamodel.base_models import InputFormat, DocumentStream
+from docling.datamodel.settings import settings
 
 from src.rag.components.converters import BaseDocumentConverter
 from src.services import AIService
-from src.core.ai_config import EngineMode
 from src.core.exceptions import BaseAppException
 from src.core.exceptions.converter_exceptions import (
     DocumentConversionError,
-    DocumentFileNotFoundError,
     PipelineInitializationError,
     UnsupportedFileFormatError,
     VLMProviderServiceError,
 )
+import cProfile
+import pstats
 
 logger = logging.getLogger(__name__)
+logging.getLogger("docling").setLevel(logging.DEBUG)
+logging.getLogger("docling.models").setLevel(logging.DEBUG)
+logging.getLogger("docling.pipeline").setLevel(logging.DEBUG)
+logging.getLogger("docling.models.stages").setLevel(logging.DEBUG)
+logging.getLogger("docling.models.inference_engines").setLevel(logging.DEBUG)
 
 
 class DoclingDocumentConverter(BaseDocumentConverter):
@@ -55,6 +62,8 @@ class DoclingDocumentConverter(BaseDocumentConverter):
         pipeline_options = PdfPipelineOptions()
         pipeline_options.images_scale = 2.0
         pipeline_options.enable_remote_services = True
+        settings.perf.page_batch_size = 12
+        pipeline_options.do_ocr = True
 
         self._configure_vlm(pipeline_options)
 
@@ -94,23 +103,37 @@ class DoclingDocumentConverter(BaseDocumentConverter):
 
         params.update(vlm_config.extra_params)
 
+        TARGET_CONCURRENCY = 6 
+
         # ============================================================
         # 1. PICTURE
         # ============================================================
 
         pipeline_options.generate_picture_images = True
         pipeline_options.do_picture_description = True
-        logger.info("Docling VLM: model=%s, url=%s, enabled=%s", vlm_config.model_name, vlm_config.api_url, pipeline_options.do_picture_description)
-        pipeline_options.picture_description_options = (
-            PictureDescriptionApiOptions(
-                url=vlm_config.api_url,
-                headers=headers or {},
-                params=params,
-                timeout=vlm_config.timeout,
-                prompt=vlm_config.picture_prompt,
-            )
+        logger.info("Docling VLM: model=%s, url=%s, timeout=%s, enabled=%s", vlm_config.model_name, vlm_config.api_url, vlm_config.timeout, pipeline_options.do_picture_description)
+        picture_engine_options = ApiVlmEngineOptions(
+            engine_type=VlmEngineType.API_OPENAI,
+            url=vlm_config.api_url,
+            headers=headers or {},
+            params=params,
+            timeout=vlm_config.timeout,
+            concurrency=TARGET_CONCURRENCY,
         )
 
+        picture_model_spec = VlmModelSpec(
+            name=vlm_config.model_name,
+            default_repo_id=vlm_config.model_name,
+            prompt=vlm_config.picture_prompt,
+            response_format=ResponseFormat.MARKDOWN,
+        )
+
+        pipeline_options.picture_description_options = PictureDescriptionVlmEngineOptions(
+            model_spec=picture_model_spec,
+            prompt=vlm_config.picture_prompt,
+            engine_options=picture_engine_options,
+        )
+     
         # ============================================================
         # 2. CODE + FORMULAS
         # ============================================================
@@ -119,12 +142,16 @@ class DoclingDocumentConverter(BaseDocumentConverter):
         pipeline_options.do_code_enrichment = True
 
         engine_options = ApiVlmEngineOptions(
+            engine_type=VlmEngineType.API_OPENAI,
             url=vlm_config.api_url,
             headers=headers or {},
+            params=params,
+            timeout=vlm_config.timeout,
+            concurrency=TARGET_CONCURRENCY,
         )
 
         api_config = ApiModelConfig(
-            params=params,
+            params=params
         )
 
         model_spec = VlmModelSpec(
@@ -152,7 +179,20 @@ class DoclingDocumentConverter(BaseDocumentConverter):
             raise UnsupportedFileFormatError(extension=Path(filename).suffix)
         try:
             stream = DocumentStream(name=filename, stream=BytesIO(file_bytes))
-            result = await asyncio.to_thread(self.converter.convert, stream)
+
+            def run_convert():
+                profiler = cProfile.Profile()
+                profiler.enable()
+                result = self.converter.convert(stream)
+                profiler.disable()
+                return result, profiler
+            start = time.perf_counter()
+            result, profiler = await asyncio.to_thread(run_convert)
+            elapsed = time.perf_counter() - start            
+            stats = pstats.Stats(profiler)
+            stats.sort_stats("cumtime")
+            stats.print_stats(100)
+            logger.info("Docling conversion: file=%s, time=%.2fs", filename, elapsed)
             markdown = result.document.export_to_markdown()
             return markdown
         except BaseAppException:

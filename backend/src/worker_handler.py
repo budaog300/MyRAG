@@ -41,6 +41,8 @@ async def process_document_task(
             documents=[raw_doc],
             chunk_size=task.chunk_size,
             chunk_overlap=task.chunk_overlap,
+            parent_chunk_size=task.parent_chunk_size,
+            parent_chunk_overlap=task.parent_chunk_overlap,
         )
         await repos.document_repo.update_status(
             collection_id=task.collection_id,
