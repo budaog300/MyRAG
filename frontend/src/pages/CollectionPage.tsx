@@ -205,6 +205,14 @@ const CollectionPage = () => {
         >
           Документы
         </NavLink>
+        <NavLink
+          to="queries"
+          className={({ isActive }) =>
+            `rounded-full px-4 py-2 text-sm font-semibold ${isActive ? "bg-secondary text-secondary-foreground" : "text-muted-foreground"
+            }`}
+        >
+          История
+        </NavLink>
       </nav>
 
       <div className="rounded-3xl border border-border bg-card p-4 shadow-xl">

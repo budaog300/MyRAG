@@ -85,4 +85,3 @@ class CollectionRepository(BaseRepository):
         collection: CollectionModel,
     ) -> None:
         await self.session.delete(collection)
-        await self.session.flush()

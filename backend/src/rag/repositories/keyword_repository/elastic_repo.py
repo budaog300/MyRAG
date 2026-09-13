@@ -149,7 +149,7 @@ class ElasticRepository(BaseKeywordRepository):
             raise CollectionNotFoundError(index)
         except Exception as e:
             logger.error("Ошибка массовой индексации Elasticsearch: индекс=%s, чанков=%d, ошибка=%s", index, len(items), e)
-            raise KeywordDatabaseError(f"Ошибка массовой индексации: {e}")
+            raise KeywordDatabaseError(str(e)) from e
 
     async def search(
         self, query: str, index: str, limit: int = 30, **kwargs
@@ -211,10 +211,9 @@ class ElasticRepository(BaseKeywordRepository):
     async def ping(self) -> bool:
         try:
             result = await self.client.ping()
-            logger.info("Проверка Elasticsearch завершена: доступен=%s", result)
             return result
         except Exception as e:
-            logger.error("Ошибка проверки доступности Elasticsearch: ошибка=%s", e)
+            logger.error("Elasticsearch недоступен: ошибка=%s", e)
             raise
 
     async def close(self):

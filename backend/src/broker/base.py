@@ -79,7 +79,6 @@ class BaseRabbitMQ:
                 logger.debug("Проверка RabbitMQ: канал закрыт")
                 return False
             await self.channel.declare_queue(name=settingsRabbitMQ.DOCUMENTS_QUEUE, passive=True)
-            logger.debug("Проверка RabbitMQ успешно выполнена")
             return True
         except Exception as exc:
             logger.warning("Проверка RabbitMQ завершилась ошибкой: %s", exc)

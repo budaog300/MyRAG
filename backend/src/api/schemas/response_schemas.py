@@ -40,6 +40,22 @@ class DocumentsResponseSchema(BaseModel):
     total: int
 
 
+class QueryHistorySchema(BaseModel):
+    id: UUID
+    query: str
+    answer: str
+    response_time_ms: int | None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class QueryHistoryResponseSchema(BaseModel):
+    items: list[QueryHistorySchema]
+    total: int
+
+
 class RAGResponseSchema(BaseModel):
     answer: str | None = Field(default=None, description="Ответ, сгенерированный LLM")
     documents: List[RAGDocument] | None = Field(
@@ -50,6 +66,9 @@ class RAGResponseSchema(BaseModel):
     )
     only_context: bool | None = Field(
         default=None, description="Флаг: возвращать ответ LLM или нет"
+    )
+    response_time_ms: int | None = Field(
+        default=None, description="Время выполнения RAG-запроса в миллисекундах"
     )
 
     class Config:

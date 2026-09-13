@@ -8,36 +8,20 @@ interface CollectionCreateDialogProps {
   onClose: () => void;
   onSubmit: (payload: {
     name: string;
-    size?: number;
-    distance?: string;
     description?: string;
     files: File[];
   }) => void;
 }
 
-const distanceOptions = [
-  { value: "COSINE", label: "Cosine" },
-  { value: "DOT", label: "Dot product" },
-  { value: "EUCLID", label: "Euclidean" },
-  { value: "MANHATTAN", label: "Manhattan" },
-];
-
 const CollectionCreateDialog = ({ open, loading, onClose, onSubmit }: CollectionCreateDialogProps) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [size, setSize] = useState(1024);
-  const [distance, setDistance] = useState("COSINE");
   const [files, setFiles] = useState<File[]>([]);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [sizeError, setSizeError] = useState("");
 
   const resetForm = () => {
     setName("");
     setDescription("");
-    setSize(1024);
-    setDistance("COSINE");
     setFiles([]);
-    setAdvancedOpen(false);
   };
 
   useEffect(() => {
@@ -51,16 +35,9 @@ const CollectionCreateDialog = ({ open, loading, onClose, onSubmit }: Collection
     if (!name.trim()) {
       return;
     }
-    if (size <= 0) {
-      setSizeError("Размер должен быть больше 0");
-      setAdvancedOpen(true);
-      return;
-    }
     onSubmit({
       name: name.trim(),
       description: description.trim() || undefined,
-      size,
-      distance,
       files,
     });
   };
@@ -108,68 +85,6 @@ const CollectionCreateDialog = ({ open, loading, onClose, onSubmit }: Collection
               rows={2}
             />
           </label>
-        </div>
-
-        <div>
-          <button
-            type="button"
-            className="text-sm font-semibold text-secondary"
-            onClick={() => setAdvancedOpen((prev) => !prev)}
-          >
-            {advancedOpen ? "Скрыть" : "Дополнительные настройки"}
-          </button>
-          {advancedOpen && (
-            <div className="mt-3 grid gap-4 md:grid-cols-2">
-              <label className="space-y-1 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1.5 whitespace-nowrap">
-                  Размер векторного пространства <span className="text-destructive">*</span>
-                  <InfoTooltip text="Количество чисел, из которых состоит вектор каждого фрагмента документа. Должно соответствовать размерности выбранной модели эмбеддингов." />
-                </span>
-                <input
-                  required
-                  type="number"
-                  min={1}
-                  value={size}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setSize(value);
-                    if (value > 0) {
-                      setSizeError("");
-                    }
-                    else {
-                      setSizeError("Размер должен быть больше 0");
-                    }
-                  }}
-                  className="w-full rounded-2xl border border-border bg-muted/20 px-3 py-2 text-foreground focus:border-primary"
-                />
-                {sizeError && (
-                  <p className="text-xs text-destructive"> {sizeError} </p>
-                )}
-              </label>
-              <label className="space-y-1 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1.5 whitespace-nowrap">
-                  Алгоритм схожести <span className="text-destructive">*</span>
-                  <InfoTooltip text="Определяет, как система сравнивает векторы документов и поискового запроса. Для большинства моделей эмбеддингов подходит Cosine." />
-                </span>
-                <select
-                  required
-                  value={distance}
-                  onChange={(event) => setDistance(event.target.value)}
-                  className="w-full rounded-2xl border border-border bg-muted/20 px-3 py-2 text-foreground focus:border-primary"
-                >
-                  {distanceOptions.map((option) => (
-                    <option
-                      key={option.value}
-                      value={option.value}
-                      className="bg-black text-white"
-                    >
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          )}
         </div>
 
         <FilePicker files={files} onFilesChange={setFiles} disabled={loading} />

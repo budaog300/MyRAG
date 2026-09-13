@@ -16,13 +16,13 @@ interface FilePickerProps {
 }
 
 interface DirectoryInputAttributes extends InputHTMLAttributes<HTMLInputElement> {
-  webkitdirectory?: boolean;
+  webkitdirectory?: string;
 }
 
 const directoryInputProps: DirectoryInputAttributes = {
   accept: ".pdf,.md,.txt,.xlsx,.doc,.docx,.pptx,.html,.htm,.png,.jpg,.jpeg,.webp",
   multiple: true,
-  webkitdirectory: true,
+  webkitdirectory: "true",
 };
 
 const FilePicker = ({ files, onFilesChange, disabled }: FilePickerProps) => {

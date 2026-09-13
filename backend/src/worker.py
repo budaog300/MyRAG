@@ -4,7 +4,7 @@ from src.core.config import settingsRabbitMQ, settingsAI
 from src.broker.consumer import RabbitMQConsumer
 from src.rag.schemas.ingest import IngestDataSchema
 from src.rag.repositories import QdrantRepository, ElasticRepository
-from src.db.repositories import RepositoryContainer, CollectionRepository, DocumentRepository
+from src.db.repositories import RepositoryContainer, CollectionRepository, DocumentRepository, QueryHistoryRepository
 from src.db.database import async_session
 from src.services import DocumentService, DocumentConverterService, AIService, S3Service
 from src.rag.components.converters import DoclingDocumentConverter, TextDocumentConverter, VLMImageConverter, ExcelConverter
@@ -46,6 +46,7 @@ async def main():
             repos = RepositoryContainer(
                 collection_repo=CollectionRepository(session),
                 document_repo=DocumentRepository(session),
+                query_history_repo=QueryHistoryRepository(session),
             )
             
             await process_document_task(

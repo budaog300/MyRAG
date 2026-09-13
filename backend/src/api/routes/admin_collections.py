@@ -2,7 +2,15 @@ from typing import List
 from uuid import UUID
 from fastapi import APIRouter, Query, status
 from src.api.schemas.request_schemas import AddCollectionSchema, QuerySchema, UpdateCollectionSchema
-from src.api.schemas.response_schemas import CollectionResponseSchema, CollectionDetailsResponseSchema, DocumentSchema, DocumentsResponseSchema, RAGResponseSchema
+from src.api.schemas.response_schemas import (
+    QueryHistoryResponseSchema,
+    QueryHistorySchema,
+    CollectionResponseSchema,
+    CollectionDetailsResponseSchema,
+    DocumentSchema,
+    DocumentsResponseSchema,
+    RAGResponseSchema
+)
 from src.api.deps import CollectionDep, RAGDep, PaginationDep, DatabaseDep
 
 router = APIRouter(prefix="/collections", tags=["Admin Collections"])
@@ -98,6 +106,68 @@ async def admin_delete_document(
 ):
     await service.delete_document(collection_id, document_id)
     return {"message": f"Документ '{document_id}' удален из коллекции {collection_id}"}
+
+
+@router.get(
+    "/{collection_id}/queries",
+    response_model=QueryHistoryResponseSchema,
+    summary="Получить историю запросов коллекции",
+)
+async def admin_get_collection_queries(
+    collection_id: UUID,
+    service: CollectionDep,
+    pagination: PaginationDep,
+):
+    queries, total = await service.get_queries(
+        collection_id,
+        pagination.size,
+        pagination.offset,
+    )
+
+    return {
+        "items": queries,
+        "total": total,
+    }
+
+
+@router.get(
+    "/{collection_id}/queries/{query_id}",
+    response_model=QueryHistorySchema,
+    summary="Получить запрос из истории коллекции",
+)
+async def admin_get_collection_query(
+    collection_id: UUID,
+    query_id: UUID,
+    service: CollectionDep,
+):
+    return await service.get_query(collection_id, query_id)
+
+
+@router.delete(
+    "/{collection_id}/queries",
+    summary="Очистить историю запросов коллекции",
+)
+async def admin_clear_collection_queries(
+    collection_id: UUID,
+    service: CollectionDep,
+):
+    await service.clear_queries(collection_id)
+
+    return {"message": f"История запросов коллекции '{collection_id}' очищена"}
+
+
+@router.delete(
+    "/{collection_id}/queries/{query_id}",
+    summary="Удалить запрос из истории коллекции",
+)
+async def admin_delete_collection_query(
+    collection_id: UUID,
+    query_id: UUID,
+    service: CollectionDep,
+):
+    await service.delete_query(collection_id, query_id)
+
+    return {"message": f"Запрос '{query_id}' удален из истории коллекции '{collection_id}'"}
 
 
 @router.post("/{collection_id}/search", response_model=RAGResponseSchema, summary="Запрос в документацию (RAG)")

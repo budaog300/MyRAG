@@ -11,6 +11,21 @@ export const formatDate = (value: string): string => {
   return dt.toLocaleString();
 };
 
+
+export const formatFileSize = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} Б`;
+
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(2)} КБ`;
+
+  const mb = kb / 1024;
+  if (mb < 1024) return `${mb.toFixed(2)} МБ`;
+
+  const gb = mb / 1024;
+  return `${gb.toFixed(2)} ГБ`;
+}
+
+
 export const pluralize = (
   count: number,
   one: string,

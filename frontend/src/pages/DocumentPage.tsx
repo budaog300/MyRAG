@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useDocument } from "@/hooks/useDocument";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import Spinner from "@/components/ui/Spinner";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatFileSize } from "@/lib/utils";
 import { toast } from "sonner";
 
 const DocumentPage = () => {
@@ -74,8 +74,7 @@ const DocumentPage = () => {
         </h3>
         <div className="mt-4 space-y-3">
           <p className="text-sm text-muted-foreground">Статус: {document.status}</p>
-          <p className="text-sm text-muted-foreground">MIME: {document.mime_type || "не указано"}</p>
-          <p className="text-sm text-muted-foreground">Размер: {document.size_bytes} B</p>
+          <p className="text-sm text-muted-foreground">Размер: {formatFileSize(document.size_bytes)}</p>
           <p className="text-sm text-muted-foreground">Создан: {formatDate(document.created_at)}</p>
         </div>
         {document.error_message && (

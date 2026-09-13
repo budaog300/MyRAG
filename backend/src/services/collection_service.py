@@ -6,13 +6,14 @@ from typing import List, Dict, Any, Optional
 from src.services.s3_service import S3Service
 from src.rag.repositories import BaseKeywordRepository, BaseVectorRepository
 from src.db.repositories import RepositoryContainer
-from src.db.models import CollectionModel, DocumentModel
+from src.db.models import CollectionModel, DocumentModel, QueryHistoryModel
 from src.core.exceptions import BaseAppException
 from src.core.exceptions.repo_exceptions import (
     CollectionOperationError,
     InvalidCollectionNameError,
     CollectionNotFoundError,
-    DocumentNotFoundError
+    DocumentNotFoundError,
+    QueryHistoryNotFoundError
 )
 
 logger = logging.getLogger(__name__)
@@ -164,8 +165,8 @@ class CollectionService:
                     for document in documents
                 ]
             )
-            for document in documents:
-                await self.db_repo.document_repo.delete(document)
+            await self.db_repo.document_repo.delete_by_collection_id(collection_id)
+            await self.db_repo.query_history_repo.delete_by_collection_id(collection_id)
             await self.db_repo.document_repo.session.commit()
             logger.info("Коллекция '%s' очищена: удалено документов=%d", collection.name, len(documents))
         except BaseAppException:
@@ -310,3 +311,114 @@ class CollectionService:
                 collection_name=collection.name,
                 details=str(exc),
             ) from exc
+
+    async def get_queries(
+        self,
+        collection_id: UUID,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> tuple[list[QueryHistoryModel], int]:
+        try:
+            collection = await self.db_repo.collection_repo.get_by_id(collection_id)
+            if collection is None:
+                raise CollectionNotFoundError(str(collection_id))
+
+            queries = await self.db_repo.query_history_repo.get_all(
+                collection_id=collection_id,
+                limit=limit,
+                offset=offset,
+            )
+            total = await self.db_repo.query_history_repo.count_by_collection_id(collection_id)
+
+            logger.info("Получена история запросов коллекции: collection_id=%s, запросов=%d, всего=%d, limit=%s, offset=%d", collection_id, len(queries), total, limit, offset)
+
+            return queries, total
+        except BaseAppException:
+            raise
+        except Exception as exc:
+            logger.error("Ошибка при получении истории запросов коллекции '%s': %s", collection_id, exc, exc_info=True)
+            raise CollectionOperationError(
+                operation="get_query_history",
+                collection_name=collection_id,
+                details=str(exc),
+            ) from exc
+
+    async def get_query(
+        self,
+        collection_id: UUID,
+        query_id: UUID,
+    ) -> QueryHistoryModel:
+        try:
+            collection = await self.db_repo.collection_repo.get_by_id(collection_id)
+            if collection is None:
+                raise CollectionNotFoundError(str(collection_id))
+
+            query_history = await self.db_repo.query_history_repo.get_by_id(
+                id=query_id,
+                collection_id=collection_id,
+            )
+
+            if query_history is None:
+                raise QueryHistoryNotFoundError(str(query_id), str(collection_id))
+            logger.info("Запрос из истории получен: collection_id=%s, query_id=%s", collection_id, query_id)
+            return query_history
+
+        except BaseAppException:
+            raise
+        except Exception as exc:
+            logger.error("Ошибка при получении запроса '%s' из коллекции '%s': %s", query_id, collection_id, exc, exc_info=True)
+            raise CollectionOperationError(
+                operation="get_query",
+                collection_name=collection_id,
+                details=str(exc),
+            ) from exc
+
+    async def clear_queries(self, collection_id: UUID) -> None:
+        collection = await self.db_repo.collection_repo.get_by_id(collection_id)
+        if collection is None:
+            raise CollectionNotFoundError(str(collection_id))
+        try:
+            await self.db_repo.query_history_repo.delete_by_collection_id(collection_id)
+            await self.db_repo.query_history_repo.session.commit()
+            logger.info("История запросов коллекции '%s' очищена", collection.name)
+        except BaseAppException:
+            raise
+        except Exception as exc:
+            logger.error("Ошибка при очистке истории запросов коллекции '%s': %s", collection.name, exc, exc_info=True)
+            await self.db_repo.query_history_repo.session.rollback()
+            raise CollectionOperationError(operation="clear_query_history", collection_name=collection.name, details=str(exc)) from exc
+
+    async def delete_query(
+        self,
+        collection_id: UUID,
+        query_id: UUID,
+    ) -> None:
+        collection = await self.db_repo.collection_repo.get_by_id(collection_id)
+        if collection is None:
+            raise CollectionNotFoundError(str(collection_id))
+
+        try:
+            query_history = await self.db_repo.query_history_repo.get_by_id(
+                id=query_id,
+                collection_id=collection_id,
+            )
+
+            if query_history is None:
+                raise QueryHistoryNotFoundError(str(query_id), str(collection_id))
+
+            await self.db_repo.query_history_repo.delete(query_history)
+            await self.db_repo.query_history_repo.session.commit()
+
+            logger.info("Запрос '%s' успешно удален из истории коллекции '%s'", query_id, collection_id)
+
+        except BaseAppException:
+            raise
+        except Exception as exc:
+            logger.error("Ошибка удаления запроса '%s' из коллекции '%s': %s", query_id, collection_id, exc, exc_info=True)
+            await self.db_repo.query_history_repo.session.rollback()
+            raise CollectionOperationError(
+                operation="delete_query",
+                collection_name=collection.name,
+                details=str(exc),
+            ) from exc
+

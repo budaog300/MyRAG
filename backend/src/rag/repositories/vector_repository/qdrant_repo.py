@@ -35,7 +35,7 @@ class QdrantRepository(BaseVectorRepository):
     async def create_collection(
         self,
         collection_name: str,
-        size: int = 384,
+        size: int = 1024,
         distance: str = "COSINE",
     ):
         try:
@@ -223,7 +223,7 @@ class QdrantRepository(BaseVectorRepository):
             raise VectorDatabaseError(str(e))
         except Exception as e:
             logger.error("Ошибка сохранения чанков в Qdrant: коллекция=%s, ошибка=%s", collection_name, e)
-            raise VectorDatabaseError(str(e))
+            raise VectorDatabaseError(str(e)) from e
 
     async def search_points(
         self,
@@ -367,7 +367,6 @@ class QdrantRepository(BaseVectorRepository):
     async def ping(self) -> bool:
         try:
             await self.client.get_collections()
-            logger.info("Qdrant доступен")
             return True
         except Exception as e:
             logger.error("Qdrant недоступен: ошибка=%s", e)

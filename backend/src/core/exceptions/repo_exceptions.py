@@ -45,6 +45,14 @@ class DocumentNotFoundError(BaseAppException):
         )
 
 
+class QueryHistoryNotFoundError(BaseAppException):
+    def __init__(self, query_id: str, collection_id: str):
+        super().__init__(
+            message=f"Запрос '{query_id}' не найден в истории коллекции '{collection_id}'",
+            status_code=404,
+        )
+
+
 class VectorDatabaseError(BaseAppException):
     def __init__(self, detail: str):
         super().__init__(

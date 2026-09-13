@@ -1,4 +1,5 @@
 import logging
+import time
 from uuid import UUID
 from typing import Optional, Dict, Any, List, Union, Tuple
 
@@ -146,6 +147,7 @@ class RAGService:
             raise CollectionNotFoundError(str(collection_id))
 
         logger.info("Начат RAG-пайплайн: collection=%s, retrieve_limit=%d, merge_limit=%d, top_k=%d", collection.id, retrieve_limit, merge_limit, top_k)
+        start = time.perf_counter()
         answer, documents = await self._full_step(
             query=query.strip(),
             collection_name=str(collection.id),
@@ -156,10 +158,20 @@ class RAGService:
             max_tokens=max_tokens,
             only_context=only_context,
         )
-        logger.info("RAG-пайплайн завершён: collection_id=%s, документов=%d, LLM=%s", collection_id, len(documents), not only_context)
+        response_time_ms = int((time.perf_counter() - start) * 1000)
+        logger.info("RAG-пайплайн завершён: collection_id=%s, документов=%d, LLM=%s, время=%d", collection_id, len(documents), not only_context, response_time_ms)
+        query_obj = await repos.query_history_repo.create(
+            collection_id=collection_id,
+            query=query.strip(),
+            answer=answer,
+            response_time_ms=response_time_ms,
+        )
+        await repos.query_history_repo.session.commit()
+        logger.info("Сохранён запрос: query_id=%s", query_obj.id)
         return {
             "answer": answer,
             "documents": documents,
             "count": len(documents),
-            "only_context": only_context
+            "only_context": only_context,
+            "response_time_ms": response_time_ms,
         }

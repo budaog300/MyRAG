@@ -4,7 +4,7 @@ from typing import Annotated
 
 from src.rag.repositories import BaseVectorRepository, BaseKeywordRepository
 from src.services import RAGService, DocumentService, CollectionService, S3Service, DocumentIngestionService, HealthCheckService
-from src.db.repositories import RepositoryContainer, CollectionRepository, DocumentRepository
+from src.db.repositories import RepositoryContainer, CollectionRepository, DocumentRepository, QueryHistoryRepository
 from src.broker.publisher import RabbitMQPublisher
 from src.db.database import get_db
 
@@ -49,6 +49,7 @@ async def get_repositories(
     return RepositoryContainer(
         collection_repo=CollectionRepository(session),
         document_repo=DocumentRepository(session),
+        query_history_repo=QueryHistoryRepository(session),
     )
 
 

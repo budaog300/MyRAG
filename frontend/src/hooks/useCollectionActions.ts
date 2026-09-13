@@ -54,6 +54,7 @@ export const useClearCollection = () => {
     onSuccess: (_data, collectionId) => {
       client.invalidateQueries({ queryKey: ["documents", collectionId] });
       client.invalidateQueries({ queryKey: ["collections", collectionId] });
+      client.invalidateQueries({ queryKey: ["queries", collectionId] });
     },
   });
 };

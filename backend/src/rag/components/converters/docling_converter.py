@@ -62,8 +62,8 @@ class DoclingDocumentConverter(BaseDocumentConverter):
         pipeline_options = PdfPipelineOptions()
         pipeline_options.images_scale = 2.0
         pipeline_options.enable_remote_services = True
-        settings.perf.page_batch_size = 12
-        pipeline_options.do_ocr = True
+        settings.perf.page_batch_size = 8
+        pipeline_options.do_ocr = False
 
         self._configure_vlm(pipeline_options)
 
@@ -103,7 +103,7 @@ class DoclingDocumentConverter(BaseDocumentConverter):
 
         params.update(vlm_config.extra_params)
 
-        TARGET_CONCURRENCY = 6 
+        TARGET_CONCURRENCY = 2
 
         # ============================================================
         # 1. PICTURE

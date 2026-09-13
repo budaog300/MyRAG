@@ -14,8 +14,8 @@ class QuerySchema(BaseModel):
 
 class AddCollectionSchema(BaseModel):
     name: str = Field(..., min_length=5, description="Введите название коллекции")
-    size: int = Field(..., ge=1, description="Введите размер векторной размерности")
-    distance: str = Field(..., min_length=1, description="Введите вид расстояния")
+    size: int = Field(default=1024, ge=1, description="Введите размер векторной размерности")
+    distance: str = Field(default="COSINE", min_length=1, description="Введите вид расстояния")
     description: str | None = Field(default=None, description="Введите описание коллекции")
 
 

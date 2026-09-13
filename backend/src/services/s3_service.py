@@ -99,7 +99,6 @@ class S3Service:
         try:
             async with self._get_client() as s3:
                 await s3.head_bucket(Bucket=self.bucket_name)
-                logger.info("S3 доступен: bucket=%s", self.bucket_name)
                 return True
         except Exception as e:
             logger.error("Проверка подключения к S3 завершилась ошибкой: bucket=%s, ошибка=%s", self.bucket_name, e)

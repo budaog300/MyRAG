@@ -6,17 +6,25 @@ import DocumentsPage from "@/pages/DocumentsPage";
 import DocumentPage from "@/pages/DocumentPage";
 import NotFound from "@/components/common/NotFound";
 import CollectionChat from "@/components/search/CollectionChat";
+import QueriesPage from "@/pages/QueriesPage";
+import QueryHistoryPage from "@/pages/QueryHistoryPage";
 
 const Router = () => (
   <Routes>
     <Route path="/" element={<Layout />}>
       <Route index element={<CollectionsPage />} />
       <Route path="collections" element={<CollectionsPage />} />
+
       <Route path="collections/:collectionId" element={<CollectionPage />}>
         <Route index element={<CollectionChat />} />
+
         <Route path="documents" element={<DocumentsPage />} />
         <Route path="documents/:documentId" element={<DocumentPage />} />
+
+        <Route path="queries" element={<QueriesPage />} />
+        <Route path="queries/:queryId" element={<QueryHistoryPage />} />
       </Route>
+
       <Route path="*" element={<NotFound />} />
     </Route>
   </Routes>

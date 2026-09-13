@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select, func
+from sqlalchemy import select, delete, func
 
 from src.db.models import DocumentModel, DocumentStatus
 from src.db.repositories.base import BaseRepository
@@ -107,9 +107,13 @@ class DocumentRepository(BaseRepository):
 
         return document
 
+    async def delete_by_collection_id(self, collection_id: UUID) -> None:
+        await self.session.execute(
+            delete(DocumentModel).where(DocumentModel.collection_id == collection_id)
+        )
+
     async def delete(
         self,
         document: DocumentModel,
     ) -> None:
         await self.session.delete(document)
-        await self.session.flush()
