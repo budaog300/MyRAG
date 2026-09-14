@@ -31,7 +31,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY alembic.ini .
 COPY migrations ./migrations
-COPY config ./config
 COPY src ./src
 
 CMD ["python", "-m", "src.main"]

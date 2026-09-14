@@ -91,6 +91,7 @@ services:
       - ./env/.env.secrets
     volumes:
       - ./backend:/app
+      - ./config/ai.yaml:/app/config/ai.yaml:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -109,6 +110,7 @@ services:
     volumes:
       - ./backend:/app
       - ./logs:/app/logs
+      - ./config/ai.yaml:/app/config/ai.yaml:ro
     depends_on:
       migrations:
         condition: service_completed_successfully
@@ -133,6 +135,7 @@ services:
     volumes:
       - ./backend:/app
       - ./logs:/app/logs
+      - ./config/ai.yaml:/app/config/ai.yaml:ro
       - hf_cache:/root/.cache/huggingface
     deploy:
       resources:

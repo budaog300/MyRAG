@@ -82,6 +82,8 @@ services:
     env_file:
       - ./env/.env
       - ./env/.env.secrets
+    volumes:
+      - ./config/ai.yaml:/app/config/ai.yaml:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -99,6 +101,7 @@ services:
       - "8000:8000"
     volumes:
       - ./logs:/app/logs
+      - ./config/ai.yaml:/app/config/ai.yaml:ro
     depends_on:
       migrations:
         condition: service_completed_successfully
@@ -122,6 +125,7 @@ services:
       - ./env/.env.secrets
     volumes:
       - ./logs:/app/logs
+      - ./config/ai.yaml:/app/config/ai.yaml:ro
       - hf_cache:/root/.cache/huggingface
     deploy:
       replicas: 1
