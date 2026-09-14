@@ -12,6 +12,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 20s
     restart: unless-stopped
 
   rabbitmq:
@@ -26,6 +27,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 20s
     restart: unless-stopped
 
   minio:
@@ -41,6 +43,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 20s
     restart: unless-stopped
 
   elasticsearch:
@@ -51,6 +54,7 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
     healthcheck:
@@ -58,6 +62,7 @@ services:
       interval: 10s
       timeout: 10s
       retries: 10
+      start_period: 30s
     restart: unless-stopped
 
   qdrant:
@@ -117,6 +122,7 @@ services:
       - ./env/.env.secrets
     volumes:
       - ./logs:/app/logs
+      - hf_cache:/root/.cache/huggingface
     deploy:
       replicas: 1
       resources:
@@ -146,7 +152,7 @@ services:
       - ./env/.env
       - ./env/.env.secrets
     ports:
-      - "8080:80"
+      - "${FRONTEND_PORT:-8080}:80"
     depends_on:
       - rag_backend
     restart: unless-stopped
@@ -216,3 +222,4 @@ volumes:
   ollama_data:
   infinity_embeddings_data:
   infinity_reranker_data:
+  hf_cache:
