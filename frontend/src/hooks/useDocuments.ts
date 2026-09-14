@@ -15,8 +15,7 @@ export const useDocuments = ({ collectionId, page = 1, size = 10 }: UseDocuments
   const query = useQuery<DocumentListResponse, ApiErrorPayload>({
     queryKey: ["documents", collectionId, page, size],
     queryFn: () => fetchDocuments(collectionId, { page, size }),
-    enabled: Boolean(collectionId),
-    refetchOnMount: false,
+    enabled: Boolean(collectionId)
   });
 
   const deleteMutation = useMutation<void, ApiErrorPayload, { documentId: string }>({

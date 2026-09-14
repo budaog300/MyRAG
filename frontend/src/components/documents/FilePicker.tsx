@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { formatFileSize } from "@/lib/utils";
 
 type FileUpdater = Dispatch<SetStateAction<File[]>>;
 
@@ -22,7 +23,7 @@ interface DirectoryInputAttributes extends InputHTMLAttributes<HTMLInputElement>
 const directoryInputProps: DirectoryInputAttributes = {
   accept: ".pdf,.md,.txt,.xlsx,.doc,.docx,.pptx,.html,.htm,.png,.jpg,.jpeg,.webp",
   multiple: true,
-  webkitdirectory: "true",
+  // webkitdirectory: "true",
 };
 
 const FilePicker = ({ files, onFilesChange, disabled }: FilePickerProps) => {
@@ -105,7 +106,7 @@ const FilePicker = ({ files, onFilesChange, disabled }: FilePickerProps) => {
             <div key={`${file.name}-${file.size}-${file.lastModified}`} className="flex items-center justify-between gap-2">
               <div className="flex flex-col">
                 <span className="text-sm text-foreground">{file.name}</span>
-                <span className="text-[11px] text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</span>
+                <span className="text-[11px] text-muted-foreground">{formatFileSize(file.size)}</span>
               </div>
               <button
                 type="button"
