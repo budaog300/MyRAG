@@ -9,9 +9,9 @@ export const useCollection = (collectionId?: CollectionId) => {
     queryKey: ["collections", collectionId],
     queryFn: () => fetchCollection(collectionId!),
     enabled: Boolean(collectionId),
-    refetchOnMount: false,
+    staleTime: 30_000,
     refetchOnWindowFocus: false,
-    gcTime: 0,
+    retry: 1,
   });
 
   return {

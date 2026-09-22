@@ -1,131 +1,116 @@
-import { type FormEvent, useEffect, useState } from "react";
-import type {
-    CollectionDetails,
-    UpdateCollectionRequest
-} from "@/types/collection";
+import { type FormEvent, useState } from "react";
+import type { CollectionDetails, UpdateCollectionRequest } from "@/types/collection";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 interface CollectionUpdateDialogProps {
-    open: boolean;
-    loading?: boolean;
-    collection: CollectionDetails;
-    onClose: () => void;
-    onSubmit: (payload: UpdateCollectionRequest) => void;
+  open: boolean;
+  loading?: boolean;
+  collection: CollectionDetails;
+  onClose: () => void;
+  onSubmit: (payload: UpdateCollectionRequest) => void;
 }
 
 const CollectionUpdateDialog = ({
-    open,
-    loading,
-    collection,
-    onClose,
-    onSubmit,
+  open,
+  loading,
+  collection,
+  onClose,
+  onSubmit,
 }: CollectionUpdateDialogProps) => {
-    const [name, setName] = useState("");
-    const [description, setDescription] = useState("");
+  const [name, setName] = useState(collection.name);
+  const [description, setDescription] = useState(collection.description ?? "");
+  const [prevOpen, setPrevOpen] = useState(open);
 
-    useEffect(() => {
-        if (open) {
-            setName(collection.name);
-            setDescription(collection.description ?? "");
-        }
-    }, [open, collection]);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setName(collection.name);
+      setDescription(collection.description ?? "");
+    }
+  }
 
-    const handleSubmit = (event: FormEvent) => {
-        event.preventDefault();
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
 
-        const payload: UpdateCollectionRequest = {};
+    const payload: UpdateCollectionRequest = {};
 
-        if (name.trim() !== collection.name) {
-            payload.name = name.trim();
-        }
-
-        if (description !== (collection.description ?? "")) {
-            payload.description = description;
-        }
-
-        if (Object.keys(payload).length === 0) {
-            onClose();
-            return;
-        }
-
-        onSubmit(payload);
-    };
-
-    if (!open) {
-        return null;
+    if (name.trim() !== collection.name) {
+      payload.name = name.trim();
     }
 
-    return (
-        <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-            onClick={onClose}
-        >
-            <form
-                className="w-full max-w-2xl space-y-6 rounded-3xl border border-border bg-black p-6 shadow-2xl"
-                onClick={(event) => event.stopPropagation()}
-                onSubmit={handleSubmit}
-            >
-                <header>
-                    <h3 className="text-xl font-semibold">
-                        Изменить коллекцию
-                    </h3>
+    if (description !== (collection.description ?? "")) {
+      payload.description = description;
+    }
 
-                    <p className="text-sm text-muted-foreground">
-                        Измените название или описание коллекции.
-                    </p>
-                </header>
+    if (Object.keys(payload).length === 0) {
+      onClose();
+      return;
+    }
 
-                <div className="space-y-4">
-                    <label className="space-y-1 text-sm text-muted-foreground">
-                        <span>
-                            Название
-                        </span>
+    onSubmit(payload);
+  };
 
-                        <input
-                            className="w-full rounded-2xl border border-border bg-muted/20 px-3 py-2 text-foreground focus:border-primary"
-                            required
-                            minLength={5}
-                            value={name}
-                            onChange={(event) => setName(event.target.value)}
-                            disabled={loading}
-                        />
-                    </label>
+  const nameTooShort = name.trim().length < 5;
 
-                    <label className="space-y-1 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1.5">
-                            <span>Описание</span>
-                        </span>
+  return (
+    <Dialog open={open} onOpenChange={(next) => !loading && !next && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Изменить коллекцию</DialogTitle>
+          <DialogDescription>Измените название или описание коллекции.</DialogDescription>
+        </DialogHeader>
 
-                        <textarea
-                            className="w-full rounded-2xl border border-border bg-muted/20 px-3 py-2 text-foreground focus:border-primary"
-                            value={description}
-                            onChange={(event) => setDescription(event.target.value)}
-                            rows={10}
-                            disabled={loading}
-                        />
-                    </label>
-                </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="update-name">
+              Название <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="update-name"
+              required
+              minLength={5}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              disabled={loading}
+              aria-invalid={nameTooShort}
+            />
+            {nameTooShort && <p className="text-xs text-red-600">Минимум 5 символов</p>}
+          </div>
 
-                <div className="flex justify-end gap-3">
-                    <button
-                        type="button"
-                        className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-muted-foreground"
-                        onClick={onClose}
-                        disabled={loading}
-                    >
-                        Отмена
-                    </button>
+          <div className="space-y-1.5">
+            <Label htmlFor="update-description">Описание</Label>
+            <Textarea
+              id="update-description"
+              rows={4}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              disabled={loading}
+            />
+          </div>
 
-                    <button
-                        type="submit"
-                        disabled={!name.trim() || loading}
-                        className="rounded-full bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground disabled:opacity-50"
-                    >
-                        {loading ? "Сохранение..." : "Сохранить"}
-                    </button>
-                </div>
-            </form>
-        </div>
-    );
+          <DialogFooter>
+            <Button type="button" variant="secondary" onClick={onClose} disabled={loading}>
+              Отмена
+            </Button>
+            <Button type="submit" disabled={nameTooShort || loading}>
+              {loading ? "Сохранение…" : "Сохранить"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
 };
 
 export default CollectionUpdateDialog;

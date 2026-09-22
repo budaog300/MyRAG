@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useDocument } from "@/hooks/useDocument";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import Spinner from "@/components/ui/Spinner";
+import { Button } from "@/components/ui/button";
 import { formatDate, formatFileSize } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -58,14 +59,14 @@ const DocumentPage = () => {
         </div>
 
         <div className="mt-5">
-          <button
-            type="button"
-            className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-destructive"
+          <Button
+            variant="destructive-outline"
+            className="rounded-full px-4"
             onClick={() => setPendingDelete(documentId)}
             disabled={deleteMutation.isPending}
           >
             Удалить документ
-          </button>
+          </Button>
         </div>
       </header>
       <section className="rounded-2xl border border-border bg-card p-6 shadow-xl">
@@ -78,7 +79,7 @@ const DocumentPage = () => {
           <p className="text-sm text-muted-foreground">Создан: {formatDate(document.created_at)}</p>
         </div>
         {document.error_message && (
-          <p className="mt-3 text-sm text-rose-400">Ошибка: {document.error_message}</p>
+          <p className="mt-3 text-sm text-red-700">Ошибка: {document.error_message}</p>
         )}
       </section>
 

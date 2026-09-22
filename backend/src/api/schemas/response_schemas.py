@@ -43,7 +43,7 @@ class DocumentsResponseSchema(BaseModel):
 class QueryHistorySchema(BaseModel):
     id: UUID
     query: str
-    answer: str
+    answer: str | None
     response_time_ms: int | None
     created_at: datetime
     updated_at: datetime

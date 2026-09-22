@@ -7,19 +7,18 @@ export const useDocument = (collectionId?: string, documentId?: string) => {
   const client = useQueryClient();
 
   const query = useQuery<DocumentRecord, ApiErrorPayload>({
-    queryKey: ["document", collectionId, documentId],
+    queryKey: ["documents", collectionId, "detail", documentId],
     queryFn: () => fetchDocument(collectionId!, documentId!),
     enabled: Boolean(collectionId && documentId),
+    staleTime: 10_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 
   const deleteMutation = useMutation<void, ApiErrorPayload, { documentId: string }>({
-    mutationFn: ({ documentId }) => deleteDocument(collectionId!, documentId),
+    mutationFn: ({ documentId: targetId }) => deleteDocument(collectionId!, targetId),
     onSuccess: () => {
-      client.invalidateQueries({
-        queryKey: ["documents", collectionId],
-        refetchType: "all",
-      });
-      client.invalidateQueries({ queryKey: ["document", collectionId, documentId] });
+      client.invalidateQueries({ queryKey: ["documents", collectionId] });
       client.invalidateQueries({ queryKey: ["collections", collectionId] });
     },
   });

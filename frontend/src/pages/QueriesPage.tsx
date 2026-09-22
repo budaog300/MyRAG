@@ -6,6 +6,7 @@ import { formatDate } from "@/lib/utils";
 import Pagination from "@/components/common/Pagination";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import Spinner from "@/components/ui/Spinner";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 const QueriesPage = () => {
@@ -37,14 +38,15 @@ const QueriesPage = () => {
                     </h3>
 
                     {items.length > 0 && (
-                        <button
-                            type="button"
-                            className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-destructive"
+                        <Button
+                            variant="destructive-outline"
+                            size="sm"
+                            className="rounded-full px-3.5"
                             onClick={() => setPendingClear(true)}
                             disabled={clearMutation.isPending}
                         >
                             Очистить историю
-                        </button>
+                        </Button>
                     )}
                 </div>
             </div>
@@ -59,12 +61,13 @@ const QueriesPage = () => {
                 {query.isError && (
                     <div className="space-y-3 text-center text-sm text-muted-foreground">
                         <p>Не удалось загрузить историю запросов.</p>
-                        <button
-                            className="text-secondary"
+                        <Button
+                            variant="link"
+                            className="h-auto px-0 text-sm"
                             onClick={() => query.refetch()}
                         >
                             Повторить
-                        </button>
+                        </Button>
                     </div>
                 )}
 
@@ -119,9 +122,10 @@ const QueriesPage = () => {
                                             </td>
 
                                             <td className="px-3 py-3">
-                                                <button
-                                                    type="button"
-                                                    className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-destructive"
+                                                <Button
+                                                    variant="destructive-outline"
+                                                    size="sm"
+                                                    className="rounded-full px-3 text-[11px]"
                                                     onClick={() =>
                                                         setPendingDelete(
                                                             item.id,
@@ -129,7 +133,7 @@ const QueriesPage = () => {
                                                     }
                                                 >
                                                     Удалить
-                                                </button>
+                                                </Button>
                                             </td>
                                         </tr>
                                     ))}

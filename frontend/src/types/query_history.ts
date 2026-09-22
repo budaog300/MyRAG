@@ -1,13 +1,13 @@
 export interface QueryHistory {
-    id: string;
-    collection_id: string;
-    query: string;
-    answer: string | null;
-    response_time_ms: number | null;
-    created_at: string;
+  id: string;
+  query: string;
+  answer: string | null;
+  response_time_ms: number | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface QueryHistoryResponse {
-    items: QueryHistory[];
-    total: number;
+  items: QueryHistory[];
+  total: number;
 }

@@ -20,7 +20,7 @@ export default defineConfig({
     },
     proxy: {
       "/api": {
-        target: "http://rag_backend:8000",
+        target: "http://localhost:8000",
         changeOrigin: true,
       },
     },

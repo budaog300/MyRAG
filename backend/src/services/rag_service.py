@@ -101,7 +101,10 @@ class RAGService:
             logger.info("LLM отключен: возвращаем найденные документы (%d) без генерации", len(final_docs))
             return None, final_docs
 
-        context_text = "\n\n---\n\n".join([doc.content for doc in final_docs])
+        context_text = "\n\n---\n\n".join(
+            f"[{i}] {doc.content}" 
+            for i, doc in enumerate(final_docs, start=1)
+        )
         
         prompt = RAG_USER_PROMPT.format(
             query=query.strip(),

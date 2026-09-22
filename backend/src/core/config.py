@@ -11,7 +11,7 @@ class SettingsQdrant(BaseSettings):
     QDRANT_URL: str = Field(default="http://localhost:6333")
     QDRANT_API_KEY: str | None = None
 
-    model_config = SettingsConfigDict(env_file=None, extra="ignore")
+    model_config = SettingsConfigDict(env_file="env/.env", extra="ignore")
 
     @property
     def get_auth_data(self) -> dict:
@@ -25,7 +25,7 @@ class SettingsElastic(BaseSettings):
     ELASTIC_URL: str = Field(default="http://localhost:9200")
     ELASTIC_API_KEY: str | None = None
 
-    model_config = SettingsConfigDict(env_file=None, extra="ignore")
+    model_config = SettingsConfigDict(env_file="env/.env", extra="ignore")
 
     @property
     def get_auth_data(self) -> dict:
@@ -45,7 +45,7 @@ class SettingsRabbitMQ(BaseSettings):
     DOCUMENTS_QUEUE: str = Field(default="documents_queue")
     DOCUMENTS_ROUTING_KEY: str = Field(default="documents.ingest")
 
-    model_config = SettingsConfigDict(env_file=None, extra="ignore")
+    model_config = SettingsConfigDict(env_file="env/.env", extra="ignore")
     
     @property
     def get_auth_data(self) -> str:
@@ -59,7 +59,7 @@ class SettingsS3(BaseSettings):
     S3_BUCKET_NAME: str = Field(default="documents")
     S3_REGION: str = Field(default="us-east-1")
 
-    model_config = SettingsConfigDict(env_file=None, extra="ignore")
+    model_config = SettingsConfigDict(env_file="env/.env", extra="ignore")
 
 
 class SettingsDB(BaseSettings):
@@ -71,7 +71,7 @@ class SettingsDB(BaseSettings):
     DB_POOL_SIZE: int = Field(default=10)
     DB_MAX_OVERFLOW: int = Field(default=20)
 
-    model_config = SettingsConfigDict(env_file=None, extra="ignore")
+    model_config = SettingsConfigDict(env_file="env/.env", extra="ignore")
 
     @property
     def get_auth_data(self) -> str:
@@ -84,7 +84,7 @@ class SettingsAI(BaseSettings):
     EMBED_MODE: EngineMode = EngineMode.CLOUD
     RERANK_MODE: EngineMode = EngineMode.CLOUD
 
-    model_config = SettingsConfigDict(env_file=None, extra="ignore")
+    model_config = SettingsConfigDict(env_file="env/.env", extra="ignore")
 
     def build_ai_config(self) -> AIServiceConfig:
         config = load_yaml("ai.yaml")

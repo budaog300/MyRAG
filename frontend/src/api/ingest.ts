@@ -16,7 +16,7 @@ export interface IngestOptions {
 export const ingestCollectionDocuments = async (
   collectionId: string,
   files: File[],
-  options?: IngestOptions,
+  options?: IngestOptions & { onUploadProgress?: (percent: number) => void },
 ): Promise<IngestResponse> => {
   const form = new FormData();
   files.forEach((file) => form.append("files", file));
@@ -24,12 +24,23 @@ export const ingestCollectionDocuments = async (
 
   if (options) {
     Object.entries(options).forEach(([key, value]) => {
-      if (value !== undefined) {
+      if (value !== undefined && typeof value === "number") {
         form.append(key, value.toString());
       }
     });
   }
 
-  const { data } = await client.post<IngestResponse>("/ingest", form);
+  const { data } = await client.post<IngestResponse>("/ingest", form, {
+    // Загрузка файлов может занимать время — не рвём запрос по короткому таймауту.
+    timeout: 300_000,
+    onUploadProgress: options?.onUploadProgress
+      ? (progressEvent) => {
+          const total = progressEvent.total ?? 0;
+          if (total > 0) {
+            options.onUploadProgress?.(Math.round((progressEvent.loaded / total) * 100));
+          }
+        }
+      : undefined,
+  });
   return data;
 };

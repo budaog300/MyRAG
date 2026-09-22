@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQueryHistory } from "@/hooks/useQueryHistory";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import Spinner from "@/components/ui/Spinner";
+import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -62,14 +63,14 @@ const QueryHistoryPage = () => {
                 </div>
 
                 <div className="mt-5">
-                    <button
-                        type="button"
-                        className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-destructive"
+                    <Button
+                        variant="destructive-outline"
+                        className="rounded-full px-4"
                         onClick={() => setPendingDelete(queryId)}
                         disabled={deleteMutation.isPending}
                     >
                         Удалить запрос
-                    </button>
+                    </Button>
                 </div>
             </header>
 

@@ -1,3 +1,7 @@
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 interface PaginationProps {
   page: number;
   size: number;
@@ -11,43 +15,57 @@ const sizes = [5, 10, 20, 50];
 const Pagination = ({ page, size, total, onPageChange, onSizeChange }: PaginationProps) => {
   const pages = Math.max(1, Math.ceil(total / size));
 
+  if (total === 0) {
+    return null;
+  }
+
   return (
-    <div className="flex flex-col gap-3 text-xs text-muted-foreground">
-      <div className="flex items-center justify-between text-[11px]">
-        <div>Всего записей: {total}</div>
+    <div className="flex flex-col gap-3 border-t border-border px-1 pt-4 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-4">
+        <span>
+          Всего записей: <span className="font-semibold text-slate-700">{total}</span>
+        </span>
         <div className="flex items-center gap-2">
-          <span>Размер:</span>
-          <select
-            className="rounded-full border border-border bg-card px-2 py-1 text-[11px] text-foreground"
-            value={size}
-            onChange={(event) => onSizeChange(Number(event.target.value))}
-          >
-            {sizes.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+          <span>На странице:</span>
+          <Select value={String(size)} onValueChange={(value) => onSizeChange(Number(value))}>
+            <SelectTrigger size="sm" className="h-8 w-16 text-xs" aria-label="Количество записей на странице">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {sizes.map((option) => (
+                <SelectItem key={option} value={String(option)}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
-      <div className="flex items-center justify-between gap-2">
-        <button
-          className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-muted-foreground disabled:opacity-50"
-          disabled={page === 1}
+
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
+          aria-label="Предыдущая страница"
         >
+          <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
           Назад
-        </button>
-        <span>
+        </Button>
+        <span className="font-mono text-xs whitespace-nowrap">
           {page} / {pages}
         </span>
-        <button
-          className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-muted-foreground disabled:opacity-50"
+        <Button
+          variant="outline"
+          size="sm"
           disabled={page >= pages}
           onClick={() => onPageChange(page + 1)}
+          aria-label="Следующая страница"
         >
           Далее
-        </button>
+          <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+        </Button>
       </div>
     </div>
   );

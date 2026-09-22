@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     deleteQuery,
     fetchQueries,
@@ -20,6 +20,10 @@ export const useQueries = ({
         queryKey: ["queries", collectionId, page, size],
         queryFn: () => fetchQueries(collectionId, { page, size }),
         enabled: Boolean(collectionId),
+        staleTime: 0,
+        refetchOnMount: "always",
+        placeholderData: keepPreviousData,
+        retry: 1,
     });
 
     const deleteMutation = useMutation({

@@ -1,38 +1,109 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import "@fontsource-variable/inter";
+@plugin "@tailwindcss/typography";
 
+/* Дизайн-токены INTEVRUM Group, адаптированные под рабочее приложение. */
 :root {
-  color-scheme: dark;
-  --background: #070a14;
-  --foreground: #e5e7ff;
-  --card: #0b1021;
-  --card-foreground: #f8fafc;
-  --primary: #a855f7;
+  color-scheme: light;
+
+  /* Базовые поверхности */
+  --background: #f6f8fa;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  /* Акцент — фирменный teal */
+  --primary: #148774;
   --primary-foreground: #ffffff;
-  --secondary: #14b8a6;
-  --secondary-foreground: #0f172a;
-  --muted: #1f2937;
-  --muted-foreground: #cbd5f5;
-  --border: #1f2a42;
-  --accent: #6366f1;
-  --ring: #312e81;
-  --radius: 1rem;
-  font-family: "Geist Variable", system-ui, sans-serif;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #1e293b;
+  --accent: #eefbf7;
+  --accent-foreground: #136c5e;
+
+  /* Статусы и ошибки */
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+
+  /* Границы и ввод */
+  --muted: #f1f5f9;
+  --muted-foreground: #475569;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #22a98e;
+
+  --radius: 0.75rem;
+}
+
+@theme inline {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Фирменная палитра teal (из landing) */
+  --color-accent-50: #eefbf7;
+  --color-accent-100: #d4f4ea;
+  --color-accent-200: #a9e8d6;
+  --color-accent-300: #74d5bb;
+  --color-accent-400: #3ec3a8;
+  --color-accent-500: #22a98e;
+  --color-accent-600: #148774;
+  --color-accent-700: #136c5e;
+  --color-accent-800: #14564c;
+  --color-accent-900: #144840;
+  --color-accent-950: #062a26;
+
+  /* Тёмные панели (из landing) */
+  --color-ink-900: #101d33;
+  --color-ink-950: #0a1120;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
-  background: radial-gradient(circle at top, rgba(99, 102, 241, 0.25), transparent 45%),
-    radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.35), transparent 35%),
-    #030712;
   min-height: 100vh;
-  color: var(--foreground);
+  @apply bg-background font-sans text-foreground antialiased;
 }
 
-#root {
-  min-height: 100vh;
+::selection {
+  background-color: var(--color-accent-200);
+  color: var(--color-ink-950);
+}
+
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent-500);
+  outline-offset: 2px;
 }
 
 button:not(:disabled) {
@@ -41,4 +112,102 @@ button:not(:disabled) {
 
 button:disabled {
   cursor: not-allowed;
+}
+
+/* Тонкие скроллбары в рабочих областях */
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
+}
+
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Появление контента (из landing) */
+@keyframes demo-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.demo-in {
+  animation: demo-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.pulse-dot {
+  animation: pulse-dot 1.1s ease-in-out infinite;
+}
+
+/* Прогресс-фазы поиска в чате */
+.typing-dot {
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+/* Приглушённый текст — темнее стандартных slate (чтобы не выглядел тускло). */
+.text-slate-400 {
+  color: #475569;
+}
+
+.text-slate-500 {
+  color: #334155;
+}
+
+.text-slate-600 {
+  color: #1e293b;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .demo-in,
+  .pulse-dot,
+  .typing-dot {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

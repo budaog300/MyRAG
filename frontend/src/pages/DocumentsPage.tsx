@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Upload } from "lucide-react";
 import { useDocuments } from "@/hooks/useDocuments";
 import { useIngest } from "@/hooks/useIngest";
 import { usePagination } from "@/hooks/usePagination";
@@ -8,14 +9,15 @@ import FilePicker from "@/components/documents/FilePicker";
 import Pagination from "@/components/common/Pagination";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import Spinner from "@/components/ui/Spinner";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 const statusLabel = (status: string) => {
   const map: Record<string, string> = {
-    pending: "text-amber-300",
-    processing: "text-sky-300",
-    ready: "text-emerald-400",
-    failed: "text-rose-400",
+    pending: "text-amber-700",
+    processing: "text-sky-700",
+    ready: "text-emerald-700",
+    failed: "text-red-700",
     deleted: "text-muted-foreground",
   };
   return map[status] ?? "text-muted-foreground";
@@ -47,7 +49,7 @@ const DocumentsPage = () => {
       });
       toast.success(`${files.length} документов отправлены на обработку`);
       setFiles([]);
-    } catch (error) {
+    } catch {
       toast.error("Не удалось отправить документы");
     }
   };
@@ -60,19 +62,26 @@ const DocumentsPage = () => {
       <div className="rounded-2xl border border-border bg-card p-6 shadow-xl">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-lg font-semibold">Документы</h3>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Выбрано файлов: {files.length}</span>
-            <button
-              className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-secondary"
-              onClick={handleUpload}
-              disabled={!files.length || ingestMutation.isPending}
-            >
-              {ingestMutation.isPending ? "Загрузка..." : "Загрузить"}
-            </button>
-          </div>
+          <span className="text-sm text-muted-foreground">
+            Выбрано файлов: {files.length}
+          </span>
         </div>
         <div className="mt-5">
           <FilePicker files={files} onFilesChange={setFiles} disabled={ingestMutation.isPending} />
+        </div>
+        <div className="mt-4 flex justify-end">
+          <Button
+            onClick={handleUpload}
+            disabled={!files.length || ingestMutation.isPending}
+            className="w-full sm:w-auto"
+          >
+            <Upload className="h-4 w-4" aria-hidden="true" />
+            {ingestMutation.isPending
+              ? "Загрузка…"
+              : files.length
+                ? `Загрузить документы (${files.length})`
+                : "Выберите файлы"}
+          </Button>
         </div>
       </div>
 
@@ -85,9 +94,9 @@ const DocumentsPage = () => {
         {query.isError && (
           <div className="space-y-3 text-center text-sm text-muted-foreground">
             <p>Не удалось загрузить документы.</p>
-            <button className="text-secondary" onClick={() => query.refetch()}>
+            <Button variant="link" className="h-auto px-0 text-sm" onClick={() => query.refetch()}>
               Повторить
-            </button>
+            </Button>
           </div>
         )}
         {!query.isLoading && !query.isError && items.length === 0 && (
@@ -124,13 +133,14 @@ const DocumentsPage = () => {
                       {document.status}
                     </td>
                     <td className="px-3 py-3">
-                      <button
-                        type="button"
-                        className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold text-destructive"
+                      <Button
+                        variant="destructive-outline"
+                        size="sm"
+                        className="rounded-full px-3 text-[11px]"
                         onClick={() => setPendingDelete(document.id)}
                       >
                         Удалить
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}

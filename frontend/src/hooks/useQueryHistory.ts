@@ -11,17 +11,20 @@ export const useQueryHistory = (
     const queryClient = useQueryClient();
 
     const query = useQuery({
-        queryKey: ["query", collectionId, queryId],
+        queryKey: ["queries", collectionId, "detail", queryId],
         queryFn: () => fetchQuery(collectionId!, queryId!),
         enabled: Boolean(collectionId && queryId),
+        staleTime: 60_000,
+        refetchOnWindowFocus: false,
+        retry: 1,
     });
 
     const deleteMutation = useMutation({
-        mutationFn: ({ queryId }: { queryId: string }) =>
-            deleteQuery(collectionId!, queryId),
+        mutationFn: ({ queryId: targetId }: { queryId: string }) =>
+            deleteQuery(collectionId!, targetId),
         onSuccess: () => {
             queryClient.removeQueries({
-                queryKey: ["query", collectionId, queryId],
+                queryKey: ["queries", collectionId, "detail", queryId],
             });
             queryClient.invalidateQueries({
                 queryKey: ["queries", collectionId],

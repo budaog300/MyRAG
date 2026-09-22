@@ -38,7 +38,11 @@ export const useDeleteCollection = () => {
 
   return useMutation<void, ApiErrorPayload, CollectionId>({
     mutationFn: (collectionId) => deleteCollection(collectionId),
-    onSuccess: () => {
+    onSuccess: (_data, collectionId) => {
+      // Убираем кэш удалённой коллекции, чтобы не словить 404 при refetch.
+      client.removeQueries({ queryKey: ["collections", collectionId] });
+      client.removeQueries({ queryKey: ["documents", collectionId] });
+      client.removeQueries({ queryKey: ["queries", collectionId] });
       client.invalidateQueries({
         queryKey: ["collections"],
         exact: true,

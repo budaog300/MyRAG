@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import text, UUID, func
+from sqlalchemy import text, UUID, DateTime, func
 import uuid
 from datetime import datetime
 
@@ -33,12 +33,13 @@ class BaseEntity(Base):
         UUID(as_uuid=True), default=uuid.uuid4, server_default=text("gen_random_uuid()"), primary_key=True
     )
     created_at: Mapped[datetime] = mapped_column(
-        default=func.now(), server_default=text("TIMEZONE('utc', now())")
+        DateTime(timezone=True),
+        server_default=func.now(),
     )
     updated_at: Mapped[datetime] = mapped_column(
-        default=func.now(),
-        server_default=text("TIMEZONE('utc', now())"),
-        onupdate=text("TIMEZONE('utc', now())"),
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
     )
 
 

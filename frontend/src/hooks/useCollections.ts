@@ -9,4 +9,5 @@ export const useCollections = () =>
     queryFn: fetchCollections,
     staleTime: 1000 * 60 * 2,
     refetchOnWindowFocus: false,
+    retry: 1,
   });

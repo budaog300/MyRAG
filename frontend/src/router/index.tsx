@@ -1,31 +1,103 @@
+import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import CollectionsPage from "@/pages/CollectionsPage";
-import CollectionPage from "@/pages/CollectionPage";
-import DocumentsPage from "@/pages/DocumentsPage";
-import DocumentPage from "@/pages/DocumentPage";
-import NotFound from "@/components/common/NotFound";
-import CollectionChat from "@/components/search/CollectionChat";
-import QueriesPage from "@/pages/QueriesPage";
-import QueryHistoryPage from "@/pages/QueryHistoryPage";
+import Spinner from "@/components/ui/Spinner";
+
+const CollectionsPage = lazy(() => import("@/pages/CollectionsPage"));
+const CollectionPage = lazy(() => import("@/pages/CollectionPage"));
+const DocumentsPage = lazy(() => import("@/pages/DocumentsPage"));
+const DocumentPage = lazy(() => import("@/pages/DocumentPage"));
+const NotFound = lazy(() => import("@/components/common/NotFound"));
+const CollectionChat = lazy(() => import("@/components/search/CollectionChat"));
+const QueriesPage = lazy(() => import("@/pages/QueriesPage"));
+const QueryHistoryPage = lazy(() => import("@/pages/QueryHistoryPage"));
+
+const PageFallback = (
+  <div className="flex min-h-[40vh] items-center justify-center">
+    <Spinner />
+  </div>
+);
 
 const Router = () => (
   <Routes>
     <Route path="/" element={<Layout />}>
-      <Route index element={<CollectionsPage />} />
-      <Route path="collections" element={<CollectionsPage />} />
+      <Route
+        index
+        element={
+          <Suspense fallback={PageFallback}>
+            <CollectionsPage />
+          </Suspense>
+        }
+      />
+      <Route
+        path="collections"
+        element={
+          <Suspense fallback={PageFallback}>
+            <CollectionsPage />
+          </Suspense>
+        }
+      />
 
-      <Route path="collections/:collectionId" element={<CollectionPage />}>
-        <Route index element={<CollectionChat />} />
+      <Route
+        path="collections/:collectionId"
+        element={
+          <Suspense fallback={PageFallback}>
+            <CollectionPage />
+          </Suspense>
+        }
+      >
+        <Route
+          index
+          element={
+            <Suspense fallback={PageFallback}>
+              <CollectionChat />
+            </Suspense>
+          }
+        />
 
-        <Route path="documents" element={<DocumentsPage />} />
-        <Route path="documents/:documentId" element={<DocumentPage />} />
+        <Route
+          path="documents"
+          element={
+            <Suspense fallback={PageFallback}>
+              <DocumentsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="documents/:documentId"
+          element={
+            <Suspense fallback={PageFallback}>
+              <DocumentPage />
+            </Suspense>
+          }
+        />
 
-        <Route path="queries" element={<QueriesPage />} />
-        <Route path="queries/:queryId" element={<QueryHistoryPage />} />
+        <Route
+          path="queries"
+          element={
+            <Suspense fallback={PageFallback}>
+              <QueriesPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="queries/:queryId"
+          element={
+            <Suspense fallback={PageFallback}>
+              <QueryHistoryPage />
+            </Suspense>
+          }
+        />
       </Route>
 
-      <Route path="*" element={<NotFound />} />
+      <Route
+        path="*"
+        element={
+          <Suspense fallback={PageFallback}>
+            <NotFound />
+          </Suspense>
+        }
+      />
     </Route>
   </Routes>
 );

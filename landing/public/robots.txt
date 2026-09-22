@@ -1,0 +1,5 @@
+# Замените https://intevrum.ru на боевой домен перед публикацией.
+User-agent: *
+Allow: /
+
+Sitemap: https://intevrum.ru/sitemap.xml

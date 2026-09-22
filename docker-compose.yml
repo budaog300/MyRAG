@@ -7,6 +7,8 @@ services:
       - ./env/.env.secrets
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
       interval: 5s
@@ -84,6 +86,7 @@ services:
       - ./env/.env.secrets
     volumes:
       - ./config/ai.yaml:/app/config/ai.yaml:ro
+      - ./backend/migrations:/app/migrations
     depends_on:
       postgres:
         condition: service_healthy
@@ -102,6 +105,7 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./config/ai.yaml:/app/config/ai.yaml:ro
+      - ./backend/migrations:/app/migrations
     depends_on:
       migrations:
         condition: service_completed_successfully
@@ -126,6 +130,7 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./config/ai.yaml:/app/config/ai.yaml:ro
+      - ./backend/migrations:/app/migrations
       - hf_cache:/root/.cache/huggingface
     deploy:
       replicas: 1

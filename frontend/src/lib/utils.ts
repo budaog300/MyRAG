@@ -8,18 +8,25 @@ export function cn(...inputs: ClassValue[]) {
 
 export const formatDate = (value: string): string => {
   const dt = new Date(value);
-  return dt.toLocaleString();
+  return dt.toLocaleString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };
 
 
-export const formatFileSize = (bytes: number): string => {
+export const formatFileSize = (bytes: number | null | undefined): string => {
+  if (bytes == null || Number.isNaN(bytes)) return "—";
   if (bytes < 1024) return `${bytes} Б`;
 
   const kb = bytes / 1024;
-  if (kb < 1024) return `${kb.toFixed(2)} КБ`;
+  if (kb < 1024) return `${kb.toFixed(1)} КБ`;
 
   const mb = kb / 1024;
-  if (mb < 1024) return `${mb.toFixed(2)} МБ`;
+  if (mb < 1024) return `${mb.toFixed(1)} МБ`;
 
   const gb = mb / 1024;
   return `${gb.toFixed(2)} ГБ`;

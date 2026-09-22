@@ -1,6 +1,8 @@
-const Spinner = () => (
-  <div className="flex items-center justify-center">
-    <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-primary border-t-transparent" />
+import { cn } from "@/lib/utils"
+
+const Spinner = ({ className }: { className?: string }) => (
+  <div className={cn("flex items-center justify-center", className)} role="status" aria-label="Загрузка">
+    <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-accent-500 border-t-transparent" />
   </div>
 );
 
