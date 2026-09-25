@@ -1,6 +1,6 @@
 llm:
   enabled: true
-  fallback_mode: cloud
+  fallback_mode: local
 
   cloud:
     model: openai/gpt-4o-mini

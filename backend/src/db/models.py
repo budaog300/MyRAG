@@ -1,7 +1,7 @@
 import enum
 from uuid import UUID, uuid4
 from typing import Optional
-from sqlalchemy import String, Integer, BigInteger, Text, ForeignKey, Boolean, Enum as SQLEnum
+from sqlalchemy import String, Integer, BigInteger, Text, ForeignKey, Boolean, Enum as SQLEnum, UUID as SQL_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db.database import BaseEntity
@@ -57,4 +57,5 @@ class QueryHistoryModel(BaseEntity):
     query: Mapped[str] = mapped_column(Text, nullable=False)
     answer: Mapped[str] = mapped_column(Text, nullable=True)
     response_time_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    request_id: Mapped[UUID] = mapped_column(SQL_UUID(as_uuid=True), nullable=False, index=True)
     collection: Mapped["CollectionModel"] = relationship("CollectionModel", back_populates="query_history")

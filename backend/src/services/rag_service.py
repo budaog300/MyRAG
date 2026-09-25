@@ -132,6 +132,7 @@ class RAGService:
         self,
         query: str,
         collection_id: UUID,
+        request_id: UUID,
         repos: RepositoryContainer,
         retrieve_limit: int = 30,
         merge_limit: int = 10,
@@ -140,7 +141,7 @@ class RAGService:
         max_tokens: int = 1024,
         only_context: bool = True        
     ) -> Dict[str, Any]:
-        logger.info("Запуск RAG: collection_id=%s, only_context=%s", collection_id, only_context)
+        logger.info("Запуск RAG: request_id=%s, collection_id=%s, only_context=%s", request_id, collection_id, only_context)
         if not query or not query.strip():
             raise EmptyQueryError()
 
@@ -149,7 +150,7 @@ class RAGService:
         if collection is None:
             raise CollectionNotFoundError(str(collection_id))
 
-        logger.info("Начат RAG-пайплайн: collection=%s, retrieve_limit=%d, merge_limit=%d, top_k=%d", collection.id, retrieve_limit, merge_limit, top_k)
+        logger.info("Начат RAG-пайплайн: request_id=%s, collection=%s, retrieve_limit=%d, merge_limit=%d, top_k=%d", request_id, collection.id, retrieve_limit, merge_limit, top_k)
         start = time.perf_counter()
         answer, documents = await self._full_step(
             query=query.strip(),
@@ -162,15 +163,16 @@ class RAGService:
             only_context=only_context,
         )
         response_time_ms = int((time.perf_counter() - start) * 1000)
-        logger.info("RAG-пайплайн завершён: collection_id=%s, документов=%d, LLM=%s, время=%d", collection_id, len(documents), not only_context, response_time_ms)
+        logger.info("RAG-пайплайн завершён: request_id=%s, collection_id=%s, документов=%d, LLM=%s, время=%d", request_id, collection_id, len(documents), not only_context, response_time_ms)
         query_obj = await repos.query_history_repo.create(
             collection_id=collection_id,
             query=query.strip(),
             answer=answer,
-            response_time_ms=response_time_ms,
+            request_id=request_id,
+            response_time_ms=response_time_ms            
         )
         await repos.query_history_repo.session.commit()
-        logger.info("Сохранён запрос: query_id=%s", query_obj.id)
+        logger.info("Сохранён запрос: request_id=%s, query_id=%s", request_id, query_obj.id)
         return {
             "answer": answer,
             "documents": documents,

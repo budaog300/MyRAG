@@ -12,12 +12,14 @@ class QueryHistoryRepository(BaseRepository):
         collection_id: UUID,
         query: str,
         answer: str,
+        request_id: UUID,
         response_time_ms: int | None = None
     ) -> QueryHistoryModel:
         new_query = QueryHistoryModel(
             collection_id=collection_id,
             query=query,
             answer=answer,
+            request_id=request_id,
             response_time_ms=response_time_ms
         )
         self.session.add(new_query)

@@ -9,8 +9,8 @@ collection_id = "218508ae-638f-4b38-a58c-01a084a8518a"
 URL = f"http://localhost:8000/api/v1/collections/{collection_id}/search"
 
 REQUEST_BODY = {
-    "query": "Какой порядок обработки документов в системе?",
-    "only_context": True
+    "query": "Как включить потоковую генерацию токенов?",
+    "only_context": False
 }
 
 # Сколько параллельных запросов делать в каждом батче

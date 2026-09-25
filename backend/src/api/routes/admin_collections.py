@@ -12,6 +12,7 @@ from src.api.schemas.response_schemas import (
     RAGResponseSchema
 )
 from src.api.deps import CollectionDep, RAGDep, PaginationDep, DatabaseDep
+from src.core.request_context import request_id_ctx
 
 router = APIRouter(prefix="/collections", tags=["Admin Collections"])
 
@@ -172,8 +173,10 @@ async def admin_delete_collection_query(
 
 @router.post("/{collection_id}/search", response_model=RAGResponseSchema, summary="Запрос в документацию (RAG)")
 async def rag_query(collection_id: UUID, body: QuerySchema, rag_service: RAGDep, repos: DatabaseDep):
+    request_id = request_id_ctx.get()
     answer = await rag_service.run(
         collection_id=collection_id,
+        request_id=request_id,
         **body.model_dump(),
         repos=repos
     )
